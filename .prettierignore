@@ -1,0 +1,9 @@
+node_modules
+dist
+.claude/
+docs/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+pipelines/
+.atl/
