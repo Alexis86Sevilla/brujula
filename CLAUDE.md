@@ -18,9 +18,8 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
 - Validar con `zod` todo dato que cruza un límite (ficheros leídos, argumentos de herramientas
   MCP, respuestas de la API de Azure DevOps). Motivo: el agente alucina formas de datos; el
   esquema las rechaza con un error claro.
-- Nada de `console.log` en `src/mcp/` ni en cualquier código que corra como servidor stdio.
-  Logs a `stderr` (`console.error`). Motivo: stdout es el canal del protocolo MCP; un log ahí
-  corrompe la conexión (futuro, módulo 6).
+- En `src/mcp/` aplican reglas propias (stdout reservado al protocolo): ver
+  `.claude/rules/mcp-server.md`.
 - No usar `any`. Usar `unknown` y estrechar con zod. Motivo: `strict` solo protege si no hay
   agujeros explícitos.
 
