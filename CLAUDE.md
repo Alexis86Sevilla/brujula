@@ -22,6 +22,7 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
   `.claude/rules/mcp-server.md`.
 - No usar `any`. Usar `unknown` y estrechar con zod. Motivo: `strict` solo protege si no hay
   agujeros explícitos.
+- Decisiones de arquitectura en `docs/adr/`. Leer antes de proponer cambios de store o de stack.
 
 ## Lo que no es obvio
 - Los textos de usuario y las tarjetas de trabajo se escriben en español; el código, los
