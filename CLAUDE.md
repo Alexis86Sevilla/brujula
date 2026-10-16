@@ -9,7 +9,7 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
 - Un test por nombre: `npx vitest run -t "nombre del test"`
 - Formatear: `npm run format`
 - Comprobar este fichero: `npm run claude-md:check`
-- Comprobar el entorno: `npm run env:check` (si existe)
+- Comprobar el entorno: `npm run env:check`
 
 ## Reglas
 - Imports relativos con extensión `.js` (`import { x } from "./x.js"`), aunque el fichero sea
@@ -28,7 +28,7 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
 - Los textos de usuario y las tarjetas de trabajo se escriben en español; el código, los
   comentarios, los nombres de ficheros y de commits, en inglés.
 - La fuente del RAG es un clon local del wiki de Azure DevOps (un repo git). Nunca indexar
-  ficheros con secretos ni datos de clientes. Ver `.claude/rules/rag.md` (futuro).
+  ficheros con secretos ni datos de clientes. Ver `.claude/rules/rag.md`.
 - Los work items siguen un estándar de calidad fijo: título como resultado, historia o
   problema, contexto, criterios en Given/When/Then, fuera de alcance, definición de hecho,
   tamaño, dependencias y riesgos. Lo implementa la skill `tarjeta` (futuro, módulo 3).
