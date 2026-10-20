@@ -6,7 +6,7 @@ and cited. A citation must point to a file, a heading path and a line range.
 
 ## Non-goals
 - No embeddings, no storage, no CLI. Those come in later modules.
-- No HTML, no setext headings (`Title\n=====`), no tables-aware splitting.
+- No HTML.
 
 ## Types
 See `src/ingest/types.ts`: `MarkdownDoc` and `Chunk`.
@@ -26,6 +26,15 @@ See `src/ingest/types.ts`: `MarkdownDoc` and `Chunk`.
 - A section is split into blocks (paragraph = consecutive non-blank lines; fenced block = one block).
   Blocks are packed greedily while the chunk stays <= `maxChars`. The heading line always stays with the first block.
 - A fenced block is never split, even if it exceeds `maxChars`.
+- Setext headings: a non-blank, non-fenced line followed by a line of only `=` (level 1) or only `-` (level 2)
+  (up to 3 leading spaces, trailing spaces allowed) is a heading; its title is the first line trimmed. The section
+  starts at the title line and the heading spans both lines. A `---` line preceded by a blank line (or at body start)
+  is a thematic break, not a heading. Lines inside fenced blocks never form headings. A table row (line starting
+  with `|`) is never a setext title.
+- Tables: consecutive lines whose first non-space character is `|` form one table block, separate from adjacent
+  paragraph lines even without a blank line between them. A table block is never split, even if it exceeds
+  `maxChars`. Overlap never starts inside a table: if the computed overlap start falls inside a table block, the
+  chunk gets no overlap (it starts at its first block).
 - `maxChars` counts new content only. Overlap is extra.
 - Overlap: a chunk after the first one of a section repeats the last `overlapLines` NON-BLANK lines of the previous chunk:
   walk back from `prev.endLine` counting non-blank lines; `startLine` is the line of the last one counted (blank lines
