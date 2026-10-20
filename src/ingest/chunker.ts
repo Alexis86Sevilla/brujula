@@ -18,6 +18,7 @@ interface Line {
   blank: boolean;
   inFence: boolean;
   fenceStart: boolean;
+  table: boolean;
   heading: Heading | null;
 }
 
@@ -77,18 +78,18 @@ function classify(rawLines: string[]): Line[] {
     if (fence) {
       const marker = FENCE_CLOSE_RE.exec(text)?.[1];
       if (marker && marker[0] === fence.char && marker.length >= fence.len) fence = null;
-      out.push({ text, blank, inFence: true, fenceStart: false, heading: null });
+      out.push({ text, blank, inFence: true, fenceStart: false, table: false, heading: null });
       continue;
     }
     const open = FENCE_OPEN_RE.exec(text)?.[1];
     if (open) {
       fence = { char: open[0] ?? "`", len: open.length };
-      out.push({ text, blank, inFence: true, fenceStart: true, heading: null });
+      out.push({ text, blank, inFence: true, fenceStart: true, table: false, heading: null });
       continue;
     }
     const m = HEADING_RE.exec(text);
     const heading = m ? { level: (m[1] ?? "").length, title: (m[2] ?? "").trim() } : null;
-    out.push({ text, blank, inFence: false, fenceStart: false, heading });
+    out.push({ text, blank, inFence: false, fenceStart: false, table: text.trimStart().startsWith("|"), heading });
   }
   return out;
 }
@@ -113,7 +114,7 @@ function splitSections(lines: Line[]): Section[] {
   return sections;
 }
 
-/** Pass 3: paragraphs (consecutive non-blank lines) and whole fenced blocks. */
+/** Pass 3: paragraphs (consecutive non-blank lines), whole table blocks and whole fenced blocks. */
 function splitBlocks(lines: Line[], from: number, to: number): Range[] {
   const blocks: Range[] = [];
   let i = from;
@@ -127,7 +128,9 @@ function splitBlocks(lines: Line[], from: number, to: number): Range[] {
     for (;;) {
       const next = lines[end + 1];
       if (end >= to || !next) break;
-      const continues = line.fenceStart ? next.inFence && !next.fenceStart : !next.blank && !next.inFence;
+      const continues = line.fenceStart
+        ? next.inFence && !next.fenceStart
+        : !next.blank && !next.inFence && next.table === line.table;
       if (!continues) break;
       end++;
     }
@@ -168,5 +171,6 @@ function overlapStart(lines: Line[], prev: Range, n: number): number | null {
       counted++;
     }
   }
+  if (start !== null && lines[start]?.table) return null;
   return start;
 }
