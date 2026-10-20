@@ -20,6 +20,8 @@ interface Line {
   fenceStart: boolean;
   table: boolean;
   heading: Heading | null;
+  /** Setext underline line: part of the heading above it, never content. */
+  underline: boolean;
 }
 
 /** Inclusive range of body line indexes (0-based). */
@@ -38,6 +40,7 @@ interface Section {
 
 const FENCE_OPEN_RE = /^ {0,3}(`{3,}|~{3,})/;
 const FENCE_CLOSE_RE = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const SETEXT_UNDERLINE_RE = /^ {0,3}(=+|-+)[ \t]*$/;
 const HEADING_RE = /^(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
 
 export function chunkMarkdown(doc: MarkdownDoc, opts: ChunkOptions = {}): Chunk[] {
@@ -78,20 +81,44 @@ function classify(rawLines: string[]): Line[] {
     if (fence) {
       const marker = FENCE_CLOSE_RE.exec(text)?.[1];
       if (marker && marker[0] === fence.char && marker.length >= fence.len) fence = null;
-      out.push({ text, blank, inFence: true, fenceStart: false, table: false, heading: null });
+      out.push({ text, blank, inFence: true, fenceStart: false, table: false, heading: null, underline: false });
       continue;
     }
     const open = FENCE_OPEN_RE.exec(text)?.[1];
     if (open) {
       fence = { char: open[0] ?? "`", len: open.length };
-      out.push({ text, blank, inFence: true, fenceStart: true, table: false, heading: null });
+      out.push({ text, blank, inFence: true, fenceStart: true, table: false, heading: null, underline: false });
       continue;
     }
     const m = HEADING_RE.exec(text);
     const heading = m ? { level: (m[1] ?? "").length, title: (m[2] ?? "").trim() } : null;
-    out.push({ text, blank, inFence: false, fenceStart: false, table: text.trimStart().startsWith("|"), heading });
+    out.push({
+      text,
+      blank,
+      inFence: false,
+      fenceStart: false,
+      table: text.trimStart().startsWith("|"),
+      heading,
+      underline: false,
+    });
   }
+  markSetext(out);
   return out;
+}
+
+/** Mark setext headings in place: a plain text line followed by a `=`/`-` underline. */
+function markSetext(lines: Line[]): void {
+  for (let i = 0; i + 1 < lines.length; i++) {
+    const title = lines[i];
+    const under = lines[i + 1];
+    if (!title || !under || title.blank || title.inFence || title.heading || title.underline) continue;
+    if (under.inFence || title.text.trimStart().startsWith("|")) continue;
+    const marker = SETEXT_UNDERLINE_RE.exec(under.text)?.[1];
+    if (!marker) continue;
+    title.heading = { level: marker[0] === "=" ? 1 : 2, title: title.text.trim() };
+    under.underline = true;
+    i++;
+  }
 }
 
 /** Pass 2: one section per heading (plus the preamble), with its heading path. */
@@ -100,15 +127,17 @@ function splitSections(lines: Line[]): Section[] {
   const stack: Heading[] = [];
   let current: Section = { headingPath: [], headingIdx: null, contentFrom: 0, contentTo: -1 };
   lines.forEach((line, i) => {
+    if (line.underline) return;
     if (!line.heading) {
       current.contentTo = i;
       return;
     }
+    const span = lines[i + 1]?.underline ? 2 : 1;
     sections.push(current);
     const level = line.heading.level;
     while ((stack.at(-1)?.level ?? 0) >= level) stack.pop();
     stack.push(line.heading);
-    current = { headingPath: stack.map((h) => h.title), headingIdx: i, contentFrom: i + 1, contentTo: i };
+    current = { headingPath: stack.map((h) => h.title), headingIdx: i, contentFrom: i + span, contentTo: i + span - 1 };
   });
   sections.push(current);
   return sections;
