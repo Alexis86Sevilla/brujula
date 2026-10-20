@@ -6,3 +6,5 @@ CLAUDE.local.md
 .claude/settings.local.json
 .claude/worktrees/
 .codegraph/
+.claude/instructions-loaded.log
+*:Zone.Identifier

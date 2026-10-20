@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
-    "env:check": "bash scripts/env-check.sh"
+    "env:check": "bash scripts/env-check.sh",
+    "claude-md:check": "bash scripts/check-claude-md.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,6 +29,7 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "gray-matter": "^4.0.3",
     "zod": "^4.6.7"
   }
 }
