@@ -108,3 +108,143 @@ describe("chunkMarkdown: size and overlap", () => {
     }
   });
 });
+
+describe("chunkMarkdown: tables", () => {
+  it("keeps a table larger than maxChars in one chunk and sends the next paragraph to the following chunk", () => {
+    const table = ["| h1 | h2 |", "| -- | -- |", "| r1 | x |", "| r2 | y |"];
+    const body = ["# Doc", "", ...table, "", "After para"].join("\n");
+    const chunks = chunkMarkdown(doc(body), { maxChars: 20, overlapLines: 0 });
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toMatchObject({ text: `# Doc\n\n${table.join("\n")}`, startLine: 1, endLine: 6 });
+    expect(chunks[1]).toMatchObject({ text: "After para", startLine: 8, endLine: 8 });
+  });
+
+  it("separates a paragraph line from a table that follows it without a blank line", () => {
+    const table = ["| a | b |", "| - | - |", "| 1 | 2 |"];
+    const body = ["# Doc", "", "Intro line", ...table].join("\n");
+    const chunks = chunkMarkdown(doc(body), { maxChars: 30, overlapLines: 0 });
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toMatchObject({ text: "# Doc\n\nIntro line", startLine: 1, endLine: 3 });
+    expect(chunks[1]).toMatchObject({ text: table.join("\n"), startLine: 4, endLine: 6 });
+  });
+
+  it("gives no overlap to a chunk that follows a chunk ending in a table", () => {
+    const body = [
+      "# Doc", //        1
+      "", //             2
+      "| a | b |", //    3
+      "| - | - |", //    4
+      "| 1 | 2 |", //    5
+      "| 3 | 4 |", //    6
+      "", //             7
+      "Tail one", //     8
+      "Tail two", //     9
+    ].join("\n");
+    const chunks = chunkMarkdown(doc(body), { maxChars: 30, overlapLines: 2 });
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toMatchObject({ startLine: 1, endLine: 6 });
+    expect(chunks[1]).toMatchObject({ text: "Tail one\nTail two", startLine: 8, endLine: 9 });
+    expect(chunks[1]?.text.startsWith("|")).toBe(false);
+  });
+});
+
+describe("chunkMarkdown: setext headings", () => {
+  it("creates sections from setext headings; the chunk starts at the title line", () => {
+    const body = [
+      "Title", //   1
+      "=====", //   2
+      "", //        3
+      "intro", //   4
+      "", //        5
+      "Sub", //     6
+      "-----", //   7
+      "", //        8
+      "body", //    9
+    ].join("\n");
+    const chunks = chunkMarkdown(doc(body));
+    expect(chunks.map((c) => c.headingPath)).toEqual([["Title"], ["Title", "Sub"]]);
+    expect(chunks[0]).toMatchObject({ text: "Title\n=====\n\nintro", startLine: 1, endLine: 4 });
+    expect(chunks[1]).toMatchObject({ text: "Sub\n-----\n\nbody", startLine: 6, endLine: 9 });
+  });
+
+  it("treats a --- line preceded by a blank line as a thematic break, not a heading", () => {
+    const body = ["# Doc", "", "para one", "", "---", "para two"].join("\n");
+    const chunks = chunkMarkdown(doc(body));
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toMatchObject({ headingPath: ["Doc"], text: body, startLine: 1, endLine: 6 });
+  });
+
+  it("does not create sections from setext-looking lines inside a fenced block", () => {
+    const body = ["# Doc", "", "```md", "Fake", "=====", "Sub", "-----", "```"].join("\n");
+    const chunks = chunkMarkdown(doc(body));
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toMatchObject({ headingPath: ["Doc"], text: body });
+  });
+
+  it("pops the heading stack correctly when ATX and setext headings are mixed", () => {
+    const body = [
+      "Top", //        1
+      "===", //        2
+      "", //           3
+      "## Mid", //     4
+      "", //           5
+      "mid text", //   6
+      "", //           7
+      "Deep", //       8
+      "----", //       9
+      "", //           10
+      "deep text", //  11
+      "", //           12
+      "# Next", //     13
+      "", //           14
+      "next text", //  15
+    ].join("\n");
+    const chunks = chunkMarkdown(doc(body));
+    expect(chunks.map((c) => c.headingPath)).toEqual([["Top", "Mid"], ["Top", "Deep"], ["Next"]]);
+    expect(chunks[0]).toMatchObject({ text: "## Mid\n\nmid text", startLine: 4, endLine: 6 });
+    expect(chunks[1]).toMatchObject({ text: "Deep\n----\n\ndeep text", startLine: 8, endLine: 11 });
+    expect(chunks[2]).toMatchObject({ text: "# Next\n\nnext text", startLine: 13, endLine: 15 });
+  });
+
+  it("never uses a table row as a setext title", () => {
+    const body = ["# Doc", "", "| a | b |", "-----", "", "text"].join("\n");
+    const chunks = chunkMarkdown(doc(body));
+    expect(chunks.map((c) => c.headingPath)).toEqual([["Doc"]]);
+  });
+});
+
+describe("chunkMarkdown: tables and setext invariants", () => {
+  it("every chunk is the exact slice of the file between startLine and endLine", () => {
+    const body = [
+      "Intro",
+      "",
+      "Title",
+      "=====",
+      "",
+      "para line",
+      "| a | b |",
+      "| - | - |",
+      "| 1 | 2 |",
+      "",
+      "Sub",
+      "-----",
+      "",
+      "| x | y |",
+      "| - | - |",
+      "",
+      "tail one",
+      "tail two",
+      "tail three",
+    ].join("\n");
+    const start = 3;
+    const lines = body.split("\n");
+    for (const overlapLines of [0, 1, 2]) {
+      const chunks = chunkMarkdown(doc(body, start), { maxChars: 40, overlapLines });
+      expect(chunks.length).toBeGreaterThan(3);
+      for (const c of chunks) {
+        expect(c.startLine).toBeLessThanOrEqual(c.endLine);
+        expect(lines.slice(c.startLine - start, c.endLine - start + 1).join("\n")).toBe(c.text);
+      }
+    }
+  });
+});
