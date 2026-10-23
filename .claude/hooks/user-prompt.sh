@@ -6,7 +6,7 @@ input=$(cat)
 prompt=$(printf '%s' "$input" | jq -r '.prompt // empty')
 [ -z "$prompt" ] && exit 0
 
-secret_re='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|sk-ant-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|(^|[^A-Za-z0-9])[a-z2-7]{52}([^A-Za-z0-9]|$))'
+. "$(dirname "$0")/lib/secret-patterns.sh"
 if [[ $prompt =~ $secret_re ]]; then
   jq -n '{decision: "block", reason: "This prompt looks like it contains a secret (key, token or PAT). It was NOT sent. Remove it and use an environment variable instead."}'
   exit 0
