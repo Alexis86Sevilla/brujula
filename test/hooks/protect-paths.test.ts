@@ -18,7 +18,13 @@ describe("protect-paths hook", () => {
   });
 
   it("blocks config-like paths", () => {
-    for (const f of [".git/config", "package-lock.json", "pipelines/pr.yml", ".claude/hooks/x.sh", ".claude/settings.json"]) {
+    for (const f of [
+      ".git/config",
+      "package-lock.json",
+      "pipelines/pr.yml",
+      ".claude/hooks/x.sh",
+      ".claude/settings.json",
+    ]) {
       expect(runHook("protect-paths.sh", edit(p(f))).code, f).toBe(2);
     }
   });
