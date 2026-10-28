@@ -9,3 +9,4 @@ CLAUDE.local.md
 .claude/instructions-loaded.log
 *:Zone.Identifier
 odd/
+.claude/context/

@@ -1,24 +1,169 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm run check)",
-      "Bash(npm run test *)",
-      "Bash(npm run typecheck)",
-      "Bash(npm run lint)",
-      "Bash(npx vitest *)",
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)"
-    ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Bash(git push --force *)",
-      "Bash(git push -f *)",
-      "Bash(rm -rf *)"
-    ]
-  },
-  "worktree": {
-    "baseRef": "head"
-  }
+	"hooks": {
+		"SessionStart": [
+			{
+				"matcher": "startup|resume|clear|compact",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh"
+					}
+				]
+			}
+		],
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/user-prompt.sh"
+					}
+				]
+			}
+		],
+		"PreToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-paths.sh"
+					}
+				]
+			},
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh"
+					},
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/secret-scan.sh"
+					}
+				]
+			}
+		],
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-file.sh",
+						"timeout": 30
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/quality-gate.sh",
+						"timeout": 300,
+						"statusMessage": "Typecheck and tests before finishing"
+					}
+				]
+			},
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify.sh",
+						"async": true
+					}
+				]
+			}
+		],
+		"Notification": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify.sh",
+						"async": true
+					}
+				]
+			}
+		]
+	},
+	"permissions": {
+		"deny": [
+			"Read(./.env)",
+			"Read(./.env.local)",
+			"Read(./.env.development)",
+			"Read(./.env.production)",
+			"Read(./.env.*)",
+			"Read(**/*.pem)",
+			"Read(**/*.key)",
+			"Read(~/.ssh/**)",
+			"Read(~/.azure/**)",
+			"Read(~/.config/gh/**)",
+			"Edit(.env)",
+			"Edit(./.env.local)",
+			"Edit(./.env.development)",
+			"Edit(./.env.production)",
+			"Edit(package-lock.json)",
+			"Bash(git push --force *)",
+			"Bash(git push -f *)",
+			"Bash(git reset --hard *)",
+			"Bash(wget *)",
+			"Bash(rm -rf *)"
+		],
+		"ask": [
+			"Bash(npm install *)",
+			"Bash(npm i *)",
+			"Bash(npm add *)",
+			"Bash(npx -y *)",
+			"Bash(git push *)",
+			"Bash(az devops *)",
+			"Bash(az boards *)",
+			"Bash(az repos *)",
+			"Bash(az pipelines *)"
+		],
+		"allow": [
+			"Bash(npm run check)",
+			"Bash(npm run test *)",
+			"Bash(npm test *)",
+			"Bash(npm run lint)",
+			"Bash(npm run typecheck)",
+			"Bash(npx vitest *)",
+			"Bash(npx tsc *)",
+			"Bash(git status *)",
+			"Bash(git diff *)",
+			"Bash(git log *)",
+			"WebFetch(domain:code.claude.com)",
+			"WebFetch(domain:modelcontextprotocol.io)"
+		]
+	},
+	"sandbox": {
+		"enabled": true,
+		"autoAllowBashIfSandboxed": true,
+		"allowUnsandboxedCommands": false,
+		"network": {
+			"allowedDomains": [
+				"registry.npmjs.org",
+				"github.com",
+				"*.github.com",
+				"dev.azure.com",
+				"*.dev.azure.com",
+				"huggingface.co",
+				"*.huggingface.co"
+			]
+		},
+		"filesystem": {
+			"denyRead": [
+				"~/.ssh",
+				"~/.aws",
+				"~/.azure",
+				"~/.config/gh"
+			]
+		}
+	},
+	"worktree": {
+		"baseRef": "head"
+	}
 }
