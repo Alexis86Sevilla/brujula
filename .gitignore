@@ -12,3 +12,4 @@ odd/
 .claude/context/
 reports/
 .stryker-tmp/
+.cache/
