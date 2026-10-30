@@ -16,7 +16,9 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "env:check": "bash scripts/env-check.sh",
     "claude-md:check": "bash scripts/check-claude-md.sh",
-    "mutation": "stryker run"
+    "mutation": "stryker run",
+    "claude:red": "BRUJULA_GATE_OFF=1 claude",
+    "claude:green": "claude --settings .claude/profiles/green.json"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
