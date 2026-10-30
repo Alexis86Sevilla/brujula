@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "ado": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp@2.11.0",
+        "${ADO_ORG}",
+        "--authentication",
+        "azcli",
+        "-d",
+        "core",
+        "work",
+        "work-items",
+        "repositories",
+        "wiki"
+      ]
+    }
+  }
+}
