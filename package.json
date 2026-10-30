@@ -9,7 +9,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p .",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -18,10 +18,12 @@
     "claude-md:check": "bash scripts/check-claude-md.sh",
     "mutation": "stryker run",
     "claude:red": "BRUJULA_GATE_OFF=1 claude",
-    "claude:green": "claude --settings .claude/profiles/green.json"
+    "claude:green": "claude --settings .claude/profiles/green.json",
+    "mcp": "tsx src/mcp/main.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/client": "^2.4.0",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
     "@types/node": "^26.6.5",
@@ -35,6 +37,7 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
     "gray-matter": "^4.0.3",
     "zod": "^4.6.7"
   }
