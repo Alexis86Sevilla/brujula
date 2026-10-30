@@ -1,6 +1,7 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { createAdr } from "./adr.js";
+import { lintCard } from "./card-lint.js";
 import { listTopics, readTopic } from "./conventions.js";
 import { CARD_STANDARD } from "./standard.js";
 
@@ -19,6 +20,9 @@ export type SearchFn = (query: string, limit: number) => Promise<SearchHit[]>;
 export const stubSearch: SearchFn = async () => {
   throw new Error("The docs index does not exist yet (module 7).");
 };
+
+/** Max characters accepted by brujula_card_lint; checked in the handler so the error can guide the model. */
+export const MAX_CARD_CHARS = 100_000;
 
 export interface ServerDeps {
   root: string;
@@ -44,7 +48,8 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
     {
       instructions:
         "Brujula: team toolkit. Use brujula_search_docs for questions about the team documentation (always cite source:lines), " +
-        "brujula_conventions before coding in an unfamiliar area, brujula_adr_create only when the user has decided something.",
+        "brujula_conventions before coding in an unfamiliar area, brujula_adr_create only when the user has decided something, " +
+        "brujula_card_lint whenever the user asks to review or check a work item or card draft.",
     },
   );
 
@@ -127,6 +132,53 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
       } catch (e) {
         return fail(`Search is unavailable: ${(e as Error).message}`);
       }
+    },
+  );
+
+  server.registerTool(
+    "brujula_card_lint",
+    {
+      title: "Lint a work item card",
+      description:
+        "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: " +
+        "required sections present and non-empty, and acceptance criteria in Given/When/Then (Dado/Cuando/Entonces). " +
+        "Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI " +
+        "(e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. " +
+        "Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
+      inputSchema: z.strictObject({
+        markdown: z
+          .string()
+          .describe("The full card as Markdown: H1 title and H2 sections, English or Spanish headings"),
+      }),
+      outputSchema: z.object({
+        ok: z.boolean().describe("True when nothing is missing or empty and the criteria use Given/When/Then"),
+        missing: z.array(z.string()).describe("Ids of sections with no heading"),
+        empty: z.array(z.string()).describe("Ids of sections whose heading has no content"),
+        gwt: z.boolean().describe("True when at least one acceptance criterion is a full Given/When/Then"),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ markdown }) => {
+      if (markdown.length > MAX_CARD_CHARS) {
+        return fail(
+          `The card is ${markdown.length} characters; the limit is ${MAX_CARD_CHARS}. ` +
+            "A work item should be far smaller: send only the card, or split it into smaller cards, and call again.",
+        );
+      }
+      const result = lintCard(markdown);
+      const summary = result.ok
+        ? "Card OK: all sections present and filled, acceptance criteria in Given/When/Then."
+        : [
+            "Card NOT ready.",
+            result.missing.length ? `Missing sections: ${result.missing.join(", ")}.` : "",
+            result.empty.length ? `Empty sections: ${result.empty.join(", ")}.` : "",
+            result.gwt
+              ? ""
+              : "Acceptance criteria need at least one full Given/When/Then (Dado/Cuando/Entonces) criterion.",
+          ]
+            .filter(Boolean)
+            .join(" ");
+      return { content: [{ type: "text" as const, text: summary }], structuredContent: result };
     },
   );
 
