@@ -13,3 +13,4 @@ odd/
 reports/
 .stryker-tmp/
 .cache/
+digests/
