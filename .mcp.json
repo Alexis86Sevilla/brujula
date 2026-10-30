@@ -16,6 +16,17 @@
         "repositories",
         "wiki"
       ]
+    },
+    "brujula": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "tsx",
+        "src/mcp/main.ts"
+      ],
+      "env": {
+        "BRUJULA_ROOT": "${CLAUDE_PROJECT_DIR:-.}"
+      }
     }
   }
 }
