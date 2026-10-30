@@ -7,3 +7,5 @@ CLAUDE.local.md
 .mcp.json
 pipelines/
 .atl/
+reports/
+.stryker-tmp/

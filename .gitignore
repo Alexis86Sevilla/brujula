@@ -10,3 +10,5 @@ CLAUDE.local.md
 *:Zone.Identifier
 odd/
 .claude/context/
+reports/
+.stryker-tmp/
