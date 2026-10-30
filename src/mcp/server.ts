@@ -18,7 +18,10 @@ export function createServer(root: string = process.cwd()): McpServer {
         "Call without 'topic' to list the available topics, then call again with one of them. " +
         "Use it BEFORE writing code in an area you have not touched in this session.",
       inputSchema: z.object({
-        topic: z.string().optional().describe("Topic name from the list, e.g. 'claude-md' or 'mcp'. Omit to list topics."),
+        topic: z
+          .string()
+          .optional()
+          .describe("Topic name from the list, e.g. 'claude-md' or 'mcp-server'. Omit to list topics."),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
