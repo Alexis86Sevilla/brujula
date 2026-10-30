@@ -53,6 +53,13 @@ describe("check-card.mjs", () => {
     expect(r.json.errors.join("\n")).toMatch(/placeholder left in section: ## Dependencias/);
   });
 
+  it("accepts the Spanish word 'todo' but rejects an uppercase TODO marker", () => {
+    const spanish = template.replace("Acceso de lectura", "Acceso de lectura a todo");
+    expect(run(spanish).json.errors).toEqual([]);
+    const marker = template.replace("Acceso de lectura", "TODO acceso de lectura");
+    expect(run(marker).json.errors.join("\n")).toMatch(/placeholder left in section: ## Dependencias/);
+  });
+
   it("works on a file path and exits 2 without arguments", () => {
     expect(execFileSync("node", [script, ".claude/skills/tarjeta/templates/card.md"], { encoding: "utf8" })).toContain(
       '"ok": true',

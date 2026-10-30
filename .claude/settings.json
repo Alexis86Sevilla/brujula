@@ -122,7 +122,10 @@
 			"Bash(az devops *)",
 			"Bash(az boards *)",
 			"Bash(az repos *)",
-			"Bash(az pipelines *)"
+			"Bash(az pipelines *)",
+			"mcp__ado__*_write",
+			"mcp__ado__repo_create_branch",
+			"mcp__ado__wiki_upsert_page"
 		],
 		"allow": [
 			"Bash(npm run check)",
@@ -136,7 +139,21 @@
 			"Bash(git diff *)",
 			"Bash(git log *)",
 			"WebFetch(domain:code.claude.com)",
-			"WebFetch(domain:modelcontextprotocol.io)"
+			"WebFetch(domain:modelcontextprotocol.io)",
+			"mcp__ado__core_list_projects",
+			"mcp__ado__core_list_project_teams",
+			"mcp__ado__wit_work_item",
+			"mcp__ado__wit_query",
+			"mcp__ado__wit_backlog",
+			"mcp__ado__search_workitem",
+			"mcp__ado__work",
+			"mcp__ado__repo_pull_request",
+			"mcp__ado__repo_pull_request_thread",
+			"mcp__ado__repo_repository",
+			"mcp__ado__repo_branch",
+			"mcp__ado__repo_file",
+			"mcp__ado__wiki",
+			"mcp__ado__search_wiki"
 		]
 	},
 	"sandbox": {

@@ -19,7 +19,8 @@ const REQUIRED = [
   ["riesgos", "Riesgos"],
 ];
 const SIZES = new Set(["xs", "s", "m", "l", "xl", "1", "2", "3", "5", "8", "13"]);
-const PLACEHOLDER = /(<[^>\n]+>|\bTODO\b|\bTBD\b|\blorem\b)/i;
+// TODO/TBD are case-sensitive: "todo" is an everyday Spanish word.
+const PLACEHOLDER = /(<[^>\n]+>|\bTODO\b|\bTBD\b|\b[Ll][Oo][Rr][Ee][Mm]\b)/;
 
 export function checkCard(markdown) {
   const errors = [];
