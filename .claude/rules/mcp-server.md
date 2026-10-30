@@ -16,3 +16,9 @@ paths:
   lo que lea.
 - La salida de una herramienta se acota (máx. unos pocos miles de tokens). Si hay más,
   paginar. Motivo: toda la salida entra en el contexto del agente.
+- `.describe()` en cada campo de entrada y `z.enum` para los conjuntos cerrados. Motivo: el
+  modelo rellena los argumentos leyendo esas descripciones; un enum le impide inventar valores.
+- Las tools que escriben nunca sobrescriben y devuelven la ruta que crean. Motivo: un reintento
+  del agente no puede destruir lo que ya existe, y la ruta devuelta le dice dónde mirar.
+- La lógica de negocio va en su propio módulo; `server.ts` solo registra. Motivo: la lógica se
+  testea sin levantar el servidor ni hablar el protocolo.
