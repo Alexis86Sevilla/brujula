@@ -19,7 +19,9 @@
     "mutation": "stryker run",
     "claude:red": "BRUJULA_GATE_OFF=1 claude",
     "claude:green": "claude --settings .claude/profiles/green.json",
-    "mcp": "tsx src/mcp/main.ts"
+    "mcp": "tsx src/mcp/main.ts",
+    "rag:index": "tsx scripts/rag-index.ts",
+    "rag:eval": "tsx scripts/rag-eval.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
