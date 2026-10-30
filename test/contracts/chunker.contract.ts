@@ -10,17 +10,27 @@ const textLine = fc.array(word, { minLength: 1, maxLength: 8 }).map((w) => w.joi
 const paragraph = fc.array(textLine, { minLength: 1, maxLength: 4 }).map((l) => l.join("\n"));
 // A balanced fence whose inner lines may look like headings: the trap for a naive chunker.
 const fence = fc
-  .tuple(fc.constantFrom("```", "~~~"), fc.array(fc.oneof(textLine, word.map((w) => `# ${w}`)), { maxLength: 5 }))
+  .tuple(
+    fc.constantFrom("```", "~~~"),
+    fc.array(
+      fc.oneof(
+        textLine,
+        word.map((w) => `# ${w}`),
+      ),
+      { maxLength: 5 },
+    ),
+  )
   .map(([m, inner]) => [m, ...inner, m].join("\n"));
 const heading = fc.tuple(fc.integer({ min: 1, max: 4 }), word).map(([n, w]) => `${"#".repeat(n)} ${w}`);
-const section = fc.tuple(fc.option(heading, { nil: undefined }), fc.array(fc.oneof(paragraph, fence), { maxLength: 6 }));
+const section = fc.tuple(
+  fc.option(heading, { nil: undefined }),
+  fc.array(fc.oneof(paragraph, fence), { maxLength: 6 }),
+);
 
-const markdown = fc
-  .array(section, { minLength: 1, maxLength: 5 })
-  .map((sections) => ({
-    body: sections.map(([h, blocks]) => [...(h ? [h] : []), ...blocks].join("\n\n")).join("\n\n"),
-    headings: sections.flatMap(([h]) => (h ? [h] : [])),
-  }));
+const markdown = fc.array(section, { minLength: 1, maxLength: 5 }).map((sections) => ({
+  body: sections.map(([h, blocks]) => [...(h ? [h] : []), ...blocks].join("\n\n")).join("\n\n"),
+  headings: sections.flatMap(([h]) => (h ? [h] : [])),
+}));
 
 const options = fc.record({
   maxChars: fc.integer({ min: 1, max: 300 }),

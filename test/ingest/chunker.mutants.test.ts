@@ -30,7 +30,6 @@ describe("chunkMarkdown: boundaries (surviving mutants)", () => {
     expect(one.map((c) => c.text)).toEqual(["x1", "x1\n\nx2", "x2\n\ny1"]);
     expect(one.map((c) => c.startLine)).toEqual([1, 1, 3]);
   });
-
 });
 
 describe("chunkMarkdown: what is (not) a heading or a fence", () => {
