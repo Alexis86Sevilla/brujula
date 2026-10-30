@@ -57,7 +57,10 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
         "Call without 'topic' to list the available topics, then call again with one of them. " +
         "Use it BEFORE writing code in an area you have not touched in this session.",
       inputSchema: z.object({
-        topic: z.string().optional().describe("Topic name from the list, e.g. 'claude-md' or 'mcp'. Omit to list topics."),
+        topic: z
+          .string()
+          .optional()
+          .describe("Topic name from the list, e.g. 'claude-md' or 'mcp-server'. Omit to list topics."),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -116,7 +119,10 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
     async ({ query, limit }) => {
       try {
         const hits = await deps.search(query, limit);
-        if (hits.length === 0) return text("No relevant passages found. Do not answer from memory; tell the user the docs do not cover this.");
+        if (hits.length === 0)
+          return text(
+            "No relevant passages found. Do not answer from memory; tell the user the docs do not cover this.",
+          );
         return text(formatHits(hits));
       } catch (e) {
         return fail(`Search is unavailable: ${(e as Error).message}`);

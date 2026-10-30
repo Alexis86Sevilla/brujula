@@ -17,7 +17,7 @@ async function connect(search: SearchFn = stubSearch) {
   await client.connect(clientTransport);
 }
 
-const firstText = (r: { content: unknown }) => (r.content as { text: string }[])[0].text;
+const firstText = (r: { content: unknown }) => (r.content as { text: string }[])[0]?.text ?? "";
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "brujula-"));
@@ -35,7 +35,11 @@ describe("tools", () => {
   it("lists the three tools", async () => {
     await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["brujula_adr_create", "brujula_conventions", "brujula_search_docs"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "brujula_adr_create",
+      "brujula_conventions",
+      "brujula_search_docs",
+    ]);
   });
 
   it("brujula_conventions lists topics and serves one", async () => {
@@ -65,7 +69,10 @@ describe("tools", () => {
     };
     const a = await client.callTool({ name: "brujula_adr_create", arguments: args });
     expect(firstText(a)).toContain("docs/adr/0001-use-sqlite-for-the-docs-index.md");
-    const b = await client.callTool({ name: "brujula_adr_create", arguments: { ...args, title: "Second decision here" } });
+    const b = await client.callTool({
+      name: "brujula_adr_create",
+      arguments: { ...args, title: "Second decision here" },
+    });
     expect(firstText(b)).toContain("docs/adr/0002-second-decision-here.md");
     const file = await readFile(join(root, "docs/adr/0001-use-sqlite-for-the-docs-index.md"), "utf8");
     expect(file).toContain("# ADR-0001: Use SQLite for the docs index");
@@ -87,7 +94,14 @@ describe("tools", () => {
 
   it("brujula_search_docs formats hits with source and lines", async () => {
     await connect(async () => [
-      { source: "wiki/deploy.md", heading: "Rollback", startLine: 10, endLine: 22, score: 0.5, text: "Run the rollback job." },
+      {
+        source: "wiki/deploy.md",
+        heading: "Rollback",
+        startLine: 10,
+        endLine: 22,
+        score: 0.5,
+        text: "Run the rollback job.",
+      },
     ]);
     const r = await client.callTool({ name: "brujula_search_docs", arguments: { query: "rollback" } });
     expect(firstText(r)).toContain("wiki/deploy.md:10-22 (Rollback)");
