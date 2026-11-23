@@ -1,6 +1,7 @@
 ---
 paths:
   - "scripts/**"
+  - "**/*.sh"
 ---
 # Scripts bash
 
@@ -19,3 +20,12 @@ paths:
   interrumpido no debe dejar basura que cambie la siguiente ejecución.
 - Errores a stderr y código de salida distinto de 0. Motivo: el pipeline y el agente solo
   distinguen fallo de éxito por el código de salida.
+- Con `set -o pipefail`, nunca `cmd | head` ni `cmd | grep -q`: cuando el segundo comando cierra la
+  tubería, el primero muere por SIGPIPE (código 141) y el script falla o toma la rama equivocada.
+  Usar `git log -n 20`, o guardar la salida en una variable y comprobarla después. Motivo:
+  `finish-course.sh` se paró dos veces así en la terminal del usuario.
+- Un script no está terminado hasta que se ha ejecutado entero una vez en un entorno desechable
+  (clon en `mktemp -d`, perfil vacío). `bash -n` solo comprueba la sintaxis. Para los comandos de
+  servicios externos (`az`, APIs) que no se pueden ejecutar ahí, contrastar cada combinación de
+  parámetros con la documentación antes de entregarlo. Motivo: `--valid-duration 720` con
+  `--queue-on-source-update-only false` falló en Azure; la documentación exige 0.

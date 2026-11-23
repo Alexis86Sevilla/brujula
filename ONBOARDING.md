@@ -52,6 +52,18 @@ Este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`, 
 `v0.2.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
 compañero, así que solo cambian cuando alguien publica una etiqueta nueva y actualiza ese `ref`.
 
+## Primeros pasos
+
+1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
+2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `/audit-cards`.
+
+## Consejos
+
+- Tras instalar o actualizar el plugin, ejecuta `/reload-plugins` o abre un `claude` nuevo (no `--resume`).
+- Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Los bloqueos de `.env` y de
+  secretos siguen activos.
+- Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.
+
 ## Si algo falla
 
 Ejecuta `/brujula:doctor`: dice qué falla y el comando exacto que lo arregla. Si no basta:
