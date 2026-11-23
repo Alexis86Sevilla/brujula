@@ -32,6 +32,16 @@ jobs:
           chmod +x "$(Agent.TempDirectory)"/trusted/scripts/*.sh
           echo "##vso[task.setvariable variable=TARGET_BRANCH]${target}"
         displayName: Take scripts from the target branch
+      # Incremental review: the last commit already reviewed comes from the hidden marker in our threads.
+      - script: |
+          set -euo pipefail
+          last="$("$(Agent.TempDirectory)/trusted/scripts/ado-pr-comment.sh" --last-reviewed)"
+          echo "last reviewed commit: ${last:-none (full review)}"
+          echo "##vso[task.setvariable variable=BASE_SHA]${last}"
+        displayName: Find the last reviewed commit
+        condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken) # read-only use: list the PR threads
       - script: |
           set -euo pipefail
           "$(Agent.TempDirectory)/trusted/scripts/pr-review.sh" "$(Build.ArtifactStagingDirectory)/review"
@@ -40,6 +50,8 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: $(CLAUDE_CODE_OAUTH_TOKEN)
           TARGET_BRANCH: $(TARGET_BRANCH)
+          BASE_SHA: $(BASE_SHA)
+          HEAD_REF: $(System.PullRequest.SourceCommitId)
           MAX_TURNS: $(MAX_TURNS)
           MAX_BUDGET_USD: $(MAX_BUDGET_USD)
       - script: |

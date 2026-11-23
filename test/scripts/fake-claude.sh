@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Fake claude: consumes stdin and prints a canned JSON envelope. Never calls the network.
-#   FAKE_CLAUDE_COUNTER=<file>  append one line per call (to prove a run made no calls)
-#   FAKE_CLAUDE_CARD=<file>     when invoked with --agent (card refiner), return this file as the card
+#   FAKE_CLAUDE_COUNTER=<file>   append one line per call (to prove a run made no calls)
+#   FAKE_CLAUDE_STDIN=<file>     save what the script sent on stdin (to inspect the diff it got)
+#   FAKE_CLAUDE_ENVELOPE=<file>  print this file as the envelope instead of the default verdict
+#   FAKE_CLAUDE_CARD=<file>      when invoked with --agent (card refiner), return this file as the card
 [[ -n "${FAKE_CLAUDE_COUNTER:-}" ]] && echo "call" >> "$FAKE_CLAUDE_COUNTER"
-cat >/dev/null
+if [[ -n "${FAKE_CLAUDE_STDIN:-}" ]]; then cat > "$FAKE_CLAUDE_STDIN"; else cat >/dev/null; fi
+
+if [[ -n "${FAKE_CLAUDE_ENVELOPE:-}" ]]; then
+  cat "$FAKE_CLAUDE_ENVELOPE"
+  exit 0
+fi
 
 for arg in "$@"; do
   if [[ "$arg" == "--agent" ]]; then

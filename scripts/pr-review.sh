@@ -12,7 +12,24 @@ mkdir -p "$out"
 git rev-parse --verify -q "origin/$target" >/dev/null \
   || { echo "origin/$target not found (checkout with fetchDepth: 0)" >&2; exit 2; }
 
-git diff --no-color -U12 "origin/$target...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)*.lock' > "$out/pr.diff"
+# Incremental mode: BASE_SHA is the last commit already reviewed (read from the PR threads by
+# ado-pr-comment.sh --last-reviewed). Unknown or empty BASE_SHA falls back to the full PR diff.
+head_ref="${HEAD_REF:-HEAD}"
+range="origin/$target...$head_ref"
+if [[ -n "${BASE_SHA:-}" ]]; then
+  if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+    range="$BASE_SHA..$head_ref"
+    echo "incremental review: $range" >&2
+  else
+    echo "BASE_SHA $BASE_SHA not found; reviewing the full diff" >&2
+  fi
+fi
+
+lockfiles=(':(exclude)package-lock.json' ':(exclude)*.lock')
+git diff --no-color -U12 "$range" -- . "${lockfiles[@]}" > "$out/pr.diff"
+
+# A push that only touches docs/ or lockfiles spends nothing.
+code_files="$(git diff --name-only "$range" -- . "${lockfiles[@]}" ':(exclude)docs/**')"
 
 render_md() {
   jq -r '
@@ -27,6 +44,12 @@ render_md() {
 
 if [[ ! -s "$out/pr.diff" ]]; then
   jq -n '{summary: "Sin cambios que revisar.", findings: []}' > "$out/review.json"
+  render_md; exit 0
+fi
+
+if [[ -z "$code_files" ]]; then
+  echo "skip: only docs/ or lockfiles changed in $range; no claude call" >&2
+  jq -n '{summary: "Solo cambian docs/ o lockfiles: sin revisión automática.", findings: [], skipped: true}' > "$out/review.json"
   render_md; exit 0
 fi
 
