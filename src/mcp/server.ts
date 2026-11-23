@@ -6,7 +6,7 @@ import { listTopics, readTopic } from "./conventions.js";
 import { CARD_STANDARD } from "./standard.js";
 
 /** Must equal "version" in plugin/.claude-plugin/plugin.json (test/server.test.ts checks it). */
-export const SERVER_VERSION = "0.3.0";
+export const SERVER_VERSION = "0.3.1";
 
 /** Max characters accepted by brujula_card_lint; checked in the handler so the error can guide the model. */
 export const MAX_CARD_CHARS = 100_000;
