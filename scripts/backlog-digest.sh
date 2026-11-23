@@ -32,7 +32,9 @@ jq -n --arg pkg "$ado_pkg" --arg org "$ADO_ORG" --arg auth "$ADO_AUTH" '{
 
 read -r -d '' PROMPT <<EOF || true
 Project: ${ADO_PROJECT}. Using ONLY the ado MCP tools available to you (read-only),
-write a Markdown digest of the current sprint backlog with exactly these sections:
+write a Markdown digest of the current sprint backlog with exactly these sections.
+Find the current sprint with the work tool (list_team_iterations, timeframe current), then
+its items with wit_work_item (list_for_iteration, get_batch) or wit_query (wiql).
 
 # Digest ${ADO_PROJECT} $(date +%F)
 ## En curso   (state Active/Doing: "#ID title - assignee")
@@ -44,10 +46,12 @@ Rules: every item cites its work item ID as #ID. Never invent items. If a tool c
 write "NO SE PUDO LEER: <reason>" in that section instead of guessing. Output only the Markdown.
 EOF
 
+# Allowlist filters by tool, not by action: every tool here must be read-only in all its actions.
+# wit_backlog is excluded on purpose (its 'reorder' action writes to the backlog).
 # `|| true`: a failed run must reach assert_ok, which prints the reason; otherwise set -e exits silently.
 env_json="$(cd "$workdir" && run_claude "$PROMPT" \
   --mcp-config "$mcp_cfg" --strict-mcp-config \
-  --allowedTools "mcp__ado__wit_backlog,mcp__ado__wit_query,mcp__ado__wit_work_item,mcp__ado__core_list_projects")" || true
+  --allowedTools "mcp__ado__work,mcp__ado__wit_query,mcp__ado__wit_work_item,mcp__ado__core_list_projects,mcp__ado__core_list_project_teams")" || true
 
 assert_ok "$env_json"
 log_cost "$env_json"
