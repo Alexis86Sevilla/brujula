@@ -1,11 +1,18 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { bash, runHook } from "./helpers.js";
 
+// A project that uses pull requests, so these cases do not depend on this repo's own
+// .claude/brujula.json (brujula itself pushes straight to main).
+const prProject = mkdtempSync(join(tmpdir(), "brujula-guard-pr-"));
+mkdirSync(join(prProject, ".claude"));
+writeFileSync(join(prProject, ".claude/brujula.json"), '{ "pullRequests": true }');
+afterAll(() => rmSync(prProject, { recursive: true, force: true }));
+
 function decision(command: string): string | undefined {
-  const r = runHook("guard-bash.sh", bash(command));
+  const r = runHook("guard-bash.sh", bash(command), { CLAUDE_PROJECT_DIR: prProject });
   expect(r.code).toBe(0); // JSON style: always exit 0
   if (!r.stdout.trim()) return undefined;
   return JSON.parse(r.stdout).hookSpecificOutput.permissionDecision;
@@ -94,7 +101,7 @@ describe("guard-bash hook", () => {
   });
 
   it("returns a reason the model can act on", () => {
-    const r = runHook("guard-bash.sh", bash("git push origin main"));
+    const r = runHook("guard-bash.sh", bash("git push origin main"), { CLAUDE_PROJECT_DIR: prProject });
     const out = JSON.parse(r.stdout).hookSpecificOutput;
     expect(out.hookEventName).toBe("PreToolUse");
     expect(out.permissionDecisionReason).toContain("pull request");
