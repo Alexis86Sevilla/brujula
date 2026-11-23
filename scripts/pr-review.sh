@@ -17,11 +17,12 @@ git rev-parse --verify -q "origin/$target" >/dev/null \
 head_ref="${HEAD_REF:-HEAD}"
 range="origin/$target...$head_ref"
 if [[ -n "${BASE_SHA:-}" ]]; then
-  if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+  # Must be an ancestor of the head: after a force-push the old sha describes a dropped history.
+  if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null && git merge-base --is-ancestor "$BASE_SHA" "$head_ref"; then
     range="$BASE_SHA..$head_ref"
     echo "incremental review: $range" >&2
   else
-    echo "BASE_SHA $BASE_SHA not found; reviewing the full diff" >&2
+    echo "BASE_SHA $BASE_SHA not found or not an ancestor of $head_ref; reviewing the full diff" >&2
   fi
 fi
 

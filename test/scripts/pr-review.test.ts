@@ -122,6 +122,18 @@ describe("pr-review.sh", () => {
     expect(r.review).toMatchObject({ findings: [], skipped: true });
   });
 
+  it("falls back to the full diff when BASE_SHA is not an ancestor (force-push)", () => {
+    const r0 = repo();
+    r0.write("src/old.ts", "export const old = 1;\n");
+    const rewritten = r0.commit("commit later dropped by a force-push");
+    r0.git("reset", "-q", "--hard", "origin/main");
+    r0.write("src/first.ts", "export const first = 1;\n");
+    r0.commit("new history");
+    const r = review(r0.dir, { BASE_SHA: rewritten }, envelope({ summary: "ok", findings: [] }));
+    expect(r.sentDiff).toContain("+++ b/src/first.ts");
+    expect(r.sentDiff).not.toContain("src/old.ts");
+  });
+
   it("falls back to the full diff when BASE_SHA is not a known commit", () => {
     const r0 = repo();
     r0.write("src/first.ts", "export const first = 1;\n");

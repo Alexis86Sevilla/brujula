@@ -39,6 +39,7 @@ jobs:
           echo "last reviewed commit: ${last:-none (full review)}"
           echo "##vso[task.setvariable variable=BASE_SHA]${last}"
         displayName: Find the last reviewed commit
+        continueOnError: true # without a base the review is simply a full one
         condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken) # read-only use: list the PR threads
