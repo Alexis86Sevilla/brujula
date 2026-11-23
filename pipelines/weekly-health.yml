@@ -1,0 +1,55 @@
+trigger: none
+pr: none
+
+# Cron is UTC. always: true runs even if main has not changed since the last run.
+schedules:
+  - cron: "0 6 * * 1"
+    displayName: Monday 06:00 UTC
+    branches:
+      include:
+        - main
+    always: true
+
+variables:
+  - group: brujula-claude
+  - name: MAX_TURNS
+    value: "12"
+  - name: MAX_BUDGET_USD
+    value: "0.80"
+
+pool:
+  vmImage: ubuntu-24.04
+
+steps:
+  - checkout: self
+    persistCredentials: false
+  - template: templates/setup-claude.yml
+  - script: |
+      set -euo pipefail
+      chmod +x scripts/*.sh
+      org="${SYSTEM_COLLECTIONURI%/}"; org="${org##*/}"
+      ADO_ORG="$org" ADO_PROJECT="$SYSTEM_TEAMPROJECT" ADO_AUTH=pat FORCE=1 \
+        scripts/backlog-digest.sh "$BUILD_ARTIFACTSTAGINGDIRECTORY/digest"
+    displayName: Backlog digest
+    timeoutInMinutes: 15
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: $(CLAUDE_CODE_OAUTH_TOKEN)
+      PERSONAL_ACCESS_TOKEN: $(ADO_PAT_B64) # base64 of "email:pat", read-only Work Items
+      MAX_TURNS: $(MAX_TURNS)
+      MAX_BUDGET_USD: $(MAX_BUDGET_USD)
+  - script: |
+      set -euo pipefail
+      if [ -d docs/cards ]; then
+        scripts/card-lint.sh docs/cards "$BUILD_ARTIFACTSTAGINGDIRECTORY/digest/card-lint.json"
+      else
+        echo "no docs/cards directory; skipping card lint"
+      fi
+    displayName: Card lint (if the repo has docs/cards/)
+    continueOnError: true # a failing card must not hide the digest
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: $(CLAUDE_CODE_OAUTH_TOKEN)
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)/digest
+      artifact: digest
