@@ -1,188 +1,110 @@
 {
-	"hooks": {
-		"SessionStart": [
-			{
-				"matcher": "startup|resume|clear|compact",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh"
-					}
-				]
-			}
-		],
-		"UserPromptSubmit": [
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/user-prompt.sh"
-					}
-				]
-			}
-		],
-		"PreToolUse": [
-			{
-				"matcher": "Edit|Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-paths.sh"
-					}
-				]
-			},
-			{
-				"matcher": "Bash",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.sh"
-					},
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/secret-scan.sh"
-					}
-				]
-			}
-		],
-		"PostToolUse": [
-			{
-				"matcher": "Edit|Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-file.sh",
-						"timeout": 30
-					}
-				]
-			}
-		],
-		"Stop": [
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/quality-gate.sh",
-						"timeout": 300,
-						"statusMessage": "Typecheck and tests before finishing"
-					}
-				]
-			},
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify.sh",
-						"async": true
-					}
-				]
-			}
-		],
-		"Notification": [
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify.sh",
-						"async": true
-					}
-				]
-			}
-		]
-	},
-	"permissions": {
-		"deny": [
-			"Read(./.env)",
-			"Read(./.env.local)",
-			"Read(./.env.development)",
-			"Read(./.env.production)",
-			"Read(./.env.*)",
-			"Read(**/*.pem)",
-			"Read(**/*.key)",
-			"Read(~/.ssh/**)",
-			"Read(~/.azure/**)",
-			"Read(~/.config/gh/**)",
-			"Edit(.env)",
-			"Edit(./.env.local)",
-			"Edit(./.env.development)",
-			"Edit(./.env.production)",
-			"Edit(package-lock.json)",
-			"Bash(git push --force *)",
-			"Bash(git push -f *)",
-			"Bash(git reset --hard *)",
-			"Bash(wget *)",
-			"Bash(rm -rf *)"
-		],
-		"ask": [
-			"Bash(npm install *)",
-			"Bash(npm i *)",
-			"Bash(npm add *)",
-			"Bash(npx -y *)",
-			"Bash(git push *)",
-			"Bash(az devops *)",
-			"Bash(az boards *)",
-			"Bash(az repos *)",
-			"Bash(az pipelines *)",
-			"mcp__ado__*_write",
-			"mcp__ado__repo_create_branch",
-			"mcp__ado__wiki_upsert_page"
-		],
-		"allow": [
-			"Bash(npm run check)",
-			"Bash(npm run test *)",
-			"Bash(npm test *)",
-			"Bash(npm run lint)",
-			"Bash(npm run typecheck)",
-			"Bash(npx vitest *)",
-			"Bash(npx tsc *)",
-			"Bash(git status *)",
-			"Bash(git diff *)",
-			"Bash(git log *)",
-			"WebFetch(domain:code.claude.com)",
-			"WebFetch(domain:modelcontextprotocol.io)",
-			"mcp__ado__core_list_projects",
-			"mcp__ado__core_list_project_teams",
-			"mcp__ado__wit_work_item",
-			"mcp__ado__wit_query",
-			"mcp__ado__wit_backlog",
-			"mcp__ado__search_workitem",
-			"mcp__ado__work",
-			"mcp__ado__repo_pull_request",
-			"mcp__ado__repo_pull_request_thread",
-			"mcp__ado__repo_repository",
-			"mcp__ado__repo_branch",
-			"mcp__ado__repo_file",
-			"mcp__ado__wiki",
-			"mcp__ado__search_wiki",
-			"mcp__brujula__brujula_conventions",
-			"mcp__brujula__brujula_search_docs"
-		]
-	},
-	"sandbox": {
-		"enabled": true,
-		"autoAllowBashIfSandboxed": true,
-		"allowUnsandboxedCommands": false,
-		"network": {
-			"allowedDomains": [
-				"registry.npmjs.org",
-				"github.com",
-				"*.github.com",
-				"dev.azure.com",
-				"*.dev.azure.com",
-				"huggingface.co",
-				"*.huggingface.co"
-			]
-		},
-		"filesystem": {
-			"denyRead": [
-				"~/.ssh",
-				"~/.aws",
-				"~/.azure",
-				"~/.config/gh"
-			]
-		}
-	},
-	"worktree": {
-		"baseRef": "head"
-	}
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.development)",
+      "Read(./.env.production)",
+      "Read(./.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.config/gh/**)",
+      "Edit(.env)",
+      "Edit(./.env.local)",
+      "Edit(./.env.development)",
+      "Edit(./.env.production)",
+      "Edit(package-lock.json)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(wget *)",
+      "Bash(rm -rf *)"
+    ],
+    "ask": [
+      "Bash(npm install *)",
+      "Bash(npm i *)",
+      "Bash(npm add *)",
+      "Bash(npx -y *)",
+      "Bash(git push *)",
+      "Bash(az devops *)",
+      "Bash(az boards *)",
+      "Bash(az repos *)",
+      "Bash(az pipelines *)",
+      "mcp__plugin_brujula_ado__*_write",
+      "mcp__plugin_brujula_ado__repo_create_branch",
+      "mcp__plugin_brujula_ado__wiki_upsert_page"
+    ],
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(node plugin/skills/tarjeta/scripts/check-card.mjs *)",
+      "Bash(npm run check)",
+      "Bash(npm run lint)",
+      "Bash(npm run test *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm test *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "mcp__plugin_brujula_ado__core_list_project_teams",
+      "mcp__plugin_brujula_ado__core_list_projects",
+      "mcp__plugin_brujula_ado__repo_branch",
+      "mcp__plugin_brujula_ado__repo_file",
+      "mcp__plugin_brujula_ado__repo_pull_request",
+      "mcp__plugin_brujula_ado__repo_pull_request_thread",
+      "mcp__plugin_brujula_ado__repo_repository",
+      "mcp__plugin_brujula_ado__search_wiki",
+      "mcp__plugin_brujula_ado__search_workitem",
+      "mcp__plugin_brujula_ado__wiki",
+      "mcp__plugin_brujula_ado__wit_backlog",
+      "mcp__plugin_brujula_ado__wit_query",
+      "mcp__plugin_brujula_ado__wit_work_item",
+      "mcp__plugin_brujula_ado__work",
+      "mcp__plugin_brujula_brujula__brujula_conventions",
+      "mcp__plugin_brujula_brujula__brujula_search_docs"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "registry.npmjs.org",
+        "github.com",
+        "*.github.com",
+        "dev.azure.com",
+        "*.dev.azure.com",
+        "huggingface.co",
+        "*.huggingface.co"
+      ]
+    },
+    "filesystem": {
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.azure",
+        "~/.config/gh"
+      ]
+    }
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "extraKnownMarketplaces": {
+    "brujula-equipo": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/Alexis86Sevilla/brujula.git",
+        "ref": "v0.2.0"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "brujula@brujula-equipo": true
+  }
 }

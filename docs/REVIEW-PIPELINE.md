@@ -6,8 +6,8 @@ Rows marked `(M9)` depend on pipelines built in module 9 and are skipped by that
 
 | # | Layer | Owner | When | Blocks if | Where it lives |
 |---|-------|-------|------|-----------|----------------|
-| 0 | Permissions, sandbox, protected paths, dangerous Bash, secrets in commits | Claude Code and hooks (deterministic) | Every tool call | A `deny` matches, or a hook exits 2 | `.claude/settings.json`, `.claude/hooks/protect-paths.sh`, `.claude/hooks/guard-bash.sh`, `.claude/hooks/secret-scan.sh` |
-| 1 | Format after each edit; typecheck and tests when the turn ends | Hooks (deterministic) | PostToolUse on Edit/Write (format); Stop event (gate) | Typecheck or tests fail | `.claude/hooks/format-file.sh`, `.claude/hooks/quality-gate.sh` |
+| 0 | Permissions, sandbox, protected paths, dangerous Bash, secrets in commits | Claude Code and hooks (deterministic) | Every tool call | A `deny` matches, or a hook exits 2 | `.claude/settings.json`, `plugin/scripts/protect-paths.sh`, `plugin/scripts/guard-bash.sh`, `plugin/scripts/secret-scan.sh` |
+| 1 | Format after each edit; typecheck and tests when the turn ends | Hooks (deterministic) | PostToolUse on Edit/Write (format); Stop event (gate) | Typecheck or tests fail | `plugin/scripts/format-file.sh`, `plugin/scripts/quality-gate.sh` |
 | 2 | Tests do not move while implementing | Author | GREEN phase of TDD | A test file changed since the RED commit | `scripts/test-guard.sh` |
 | 3 | Mutation score of tested modules | Author | Before a PR that touches `src/ingest/` | Score below the `break` threshold | `npm run mutation` |
 | 4 | Independent verifier against the card | `verificador` (clean context) | Before the PR | A criterion FAILs, or is UNCOVERED and nobody decides | `.claude/agents/verificador.md`, `/verificar docs/cards/<card>.md` |

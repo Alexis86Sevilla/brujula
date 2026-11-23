@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Turns a topic and loose ideas into a reviewed backlog drafted in the conversation - one Feature plus well-defined Product Backlog Item cards validated with the card checker. Nothing is written to disk or to Azure Boards; publishing is done afterwards with /publicar. Use when a PM or tech lead asks to build or draft a backlog, an epic or a set of user stories from ideas about a topic.
+description: Turns a topic and loose ideas into a reviewed backlog drafted in the conversation - one Feature plus well-defined Product Backlog Item cards validated with the card checker. Nothing is written to disk or to Azure Boards; publishing is done afterwards with /brujula:publicar. Use when a PM or tech lead asks to build or draft a backlog, an epic or a set of user stories from ideas about a topic.
 when_to_use: Spanish requests such as "créame un backlog sobre", "monta el backlog de", "saca las historias de estas ideas", "desglosa esto en PBIs", "prepárame las tarjetas de este tema".
 argument-hint: [topic and ideas]
 allowed-tools: Read Glob Grep Bash(node *check-card.mjs*)
@@ -36,7 +36,7 @@ tool whose name ends in `_write`.
      [card.md](../tarjeta/templates/card.md) once. The example is illustrative: never copy its facts.
    - Write the card in Spanish with exactly the headings of the template.
    - Validate it by piping the card markdown through stdin:
-     `node .claude/skills/tarjeta/scripts/check-card.mjs -`.
+     `node ${CLAUDE_PLUGIN_ROOT}/skills/tarjeta/scripts/check-card.mjs -`.
      Fix every listed error and run it again, at most three times; if it still fails, show the errors.
    - Ground the context and acceptance criteria in the facts from step 3, citing files and versions.
    - Never invent facts: links, ADR numbers, people, dates, metrics. Put anything unknown in an extra
@@ -44,5 +44,5 @@ tool whose name ends in `_write`.
    - Show the card and the checker result, then ask "¿La doy por buena?" and wait. Apply the
      user's corrections and validate again before moving to the next card.
 6. CLOSE. Print a summary table (n, title, estimate, status: aprobada / pendiente) and tell the user:
-   "Cuando quieras, publica las aprobadas con /publicar". Remind them that the draft lives only in this
+   "Cuando quieras, publica las aprobadas con /brujula:publicar". Remind them that the draft lives only in this
    conversation until it is published.

@@ -1,6 +1,6 @@
 ---
 name: sprint-sync
-description: Refresh .claude/context/sprint.md with the current sprint from Azure Boards. Use only when the user runs /sprint-sync.
+description: Refresh .claude/context/sprint.md with the current sprint from Azure Boards. Use only when the user runs /brujula:sprint-sync.
 disable-model-invocation: true
 argument-hint: "[project] [team]"
 ---

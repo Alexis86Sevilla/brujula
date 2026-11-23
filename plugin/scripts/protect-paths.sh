@@ -26,7 +26,7 @@ case "$file" in
   */.git/*)                block "git internals" ;;
   */package-lock.json)     block "lockfile, changes only through npm" ;;
   */pipelines/*)           block "CI definitions need human review" ;;
-  */.claude/hooks/*)       block "guardrails cannot edit themselves" ;;
+  */.claude/hooks/*|*/plugin/scripts/*|*/plugin/hooks/*)     block "guardrails cannot edit themselves" ;;
   */.claude/settings.json) block "guardrails cannot edit themselves" ;;
 esac
 exit 0

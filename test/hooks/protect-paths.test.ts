@@ -23,6 +23,8 @@ describe("protect-paths hook", () => {
       "package-lock.json",
       "pipelines/pr.yml",
       ".claude/hooks/x.sh",
+      "plugin/scripts/guard-bash.sh",
+      "plugin/hooks/hooks.json",
       ".claude/settings.json",
     ]) {
       expect(runHook("protect-paths.sh", edit(p(f))).code, f).toBe(2);

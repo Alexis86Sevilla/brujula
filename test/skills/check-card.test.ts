@@ -2,8 +2,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const script = ".claude/skills/tarjeta/scripts/check-card.mjs";
-const template = readFileSync(".claude/skills/tarjeta/templates/card.md", "utf8").replace(/\r\n/g, "\n");
+const script = "plugin/skills/tarjeta/scripts/check-card.mjs";
+const template = readFileSync("plugin/skills/tarjeta/templates/card.md", "utf8").replace(/\r\n/g, "\n");
 
 function run(markdown: string): { status: number | null; json: { ok: boolean; errors: string[] } } {
   const r = spawnSync("node", [script, "-"], { input: markdown, encoding: "utf8" });
@@ -61,7 +61,7 @@ describe("check-card.mjs", () => {
   });
 
   it("works on a file path and exits 2 without arguments", () => {
-    expect(execFileSync("node", [script, ".claude/skills/tarjeta/templates/card.md"], { encoding: "utf8" })).toContain(
+    expect(execFileSync("node", [script, "plugin/skills/tarjeta/templates/card.md"], { encoding: "utf8" })).toContain(
       '"ok": true',
     );
     expect(spawnSync("node", [script]).status).toBe(2);

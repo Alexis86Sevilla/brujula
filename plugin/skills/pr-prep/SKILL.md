@@ -1,6 +1,6 @@
 ---
 name: pr-prep
-description: Prepares a Conventional Commit message and a pull request description for the current branch from its diff, linking the Azure Boards work item. Run it yourself with /pr-prep before committing or opening a pull request.
+description: Prepares a Conventional Commit message and a pull request description for the current branch from its diff, linking the Azure Boards work item. Run it yourself with /brujula:pr-prep before committing or opening a pull request.
 argument-hint: [work-item-id]
 arguments: [item]
 disable-model-invocation: true

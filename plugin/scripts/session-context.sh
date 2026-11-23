@@ -5,7 +5,7 @@ set -u
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
-echo "## Session context (injected by .claude/hooks/session-context.sh)"
+echo "## Session context (injected by the brujula plugin session-context.sh)"
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Branch: $(git branch --show-current)"
   echo "Last commits:"

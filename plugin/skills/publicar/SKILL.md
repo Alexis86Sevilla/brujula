@@ -1,6 +1,6 @@
 ---
 name: publicar
-description: Publish the Feature and the approved cards drafted in this conversation (by the backlog skill) to Azure Boards, after validating them and getting explicit user confirmation. Use when the user runs /publicar.
+description: Publish the Feature and the approved cards drafted in this conversation (by the backlog skill) to Azure Boards, after validating them and getting explicit user confirmation. Use when the user runs /brujula:publicar.
 disable-model-invocation: true
 argument-hint: "[project]"
 ---
@@ -12,7 +12,7 @@ Talk to the user in Spanish. Work in these steps and do not skip any:
 
 1. COLLECT. Take from the conversation the Feature and only the cards marked as approved, in their
    latest corrected version. If there is no approved card, say so and stop.
-2. VALIDATE. Pipe each card through `node .claude/skills/tarjeta/scripts/check-card.mjs -`.
+2. VALIDATE. Pipe each card through `node ${CLAUDE_PLUGIN_ROOT}/skills/tarjeta/scripts/check-card.mjs -`.
    Drop every card that fails, list it with its errors, and do not fix it silently.
 3. CHECK DUPLICATES. With `wit_query` (action `wiql`), look for open work items in the project whose
    title equals the Feature or any card title. Report matches; drop those items unless the user says

@@ -1,7 +1,7 @@
 ---
 name: refinador
 description: Reviews a work item card (a markdown file or an Azure Boards id) against the Brujula card standard and returns a structured verdict. Use proactively before publishing or starting any card.
-tools: Read, Grep, Glob, mcp__ado__wit_work_item, mcp__ado__search_workitem
+tools: Read, Grep, Glob, mcp__plugin_brujula_ado__wit_work_item, mcp__plugin_brujula_ado__search_workitem
 model: sonnet
 ---
 

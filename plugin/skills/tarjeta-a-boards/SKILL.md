@@ -1,6 +1,6 @@
 ---
 name: tarjeta-a-boards
-description: Publish an approved card (markdown file) to Azure Boards as a Product Backlog Item, after validating it and getting explicit user confirmation. Use when the user runs /tarjeta-a-boards with a card file path.
+description: Publish an approved card (markdown file) to Azure Boards as a Product Backlog Item, after validating it and getting explicit user confirmation. Use when the user runs /brujula:tarjeta-a-boards with a card file path.
 disable-model-invocation: true
 argument-hint: "<path-to-card.md> <project>"
 ---
@@ -11,7 +11,7 @@ Arguments: $ARGUMENTS
 Work in these steps and do not skip any:
 
 1. VALIDATE. Validate the file with the card validator of the `tarjeta` skill:
-   `node .claude/skills/tarjeta/scripts/check-card.mjs <file>`.
+   `node ${CLAUDE_PLUGIN_ROOT}/skills/tarjeta/scripts/check-card.mjs <file>`.
    If it reports any error, stop and print the errors. Do not fix the card silently.
 2. MAP. Build the exact payload for `wit_work_item_write` (action `create`): work item type
    `Product Backlog Item` (always; never another type) and the fields defined in

@@ -1,6 +1,6 @@
 ---
 name: tareas
-description: Break down an existing Product Backlog Item in Azure Boards into child Tasks, proposed from its acceptance criteria and definition of done, and create them only after explicit user confirmation. Use when a tech lead runs /tareas with a PBI id, usually during sprint planning.
+description: Break down an existing Product Backlog Item in Azure Boards into child Tasks, proposed from its acceptance criteria and definition of done, and create them only after explicit user confirmation. Use when a tech lead runs /brujula:tareas with a PBI id, usually during sprint planning.
 disable-model-invocation: true
 argument-hint: "<pbi-id> [project]"
 ---

@@ -62,8 +62,8 @@ for f in "${files[@]}"; do
   # --- Step 2: model judgement, only when the structure is valid (no tokens on broken cards) ---
   verdict="null"
   if [[ "$(jq -r .ok <<<"$det")" == "true" ]]; then
-    env_json="$(cd "$workdir" && run_claude "$PROMPT" --json-schema "$SCHEMA" < "$abs")"
-    assert_ok "$env_json"
+    env_json="$(cd "$workdir" && run_claude "$PROMPT" --json-schema "$SCHEMA" < "$abs")" || true
+    assert_ok "$env_json" || exit 2
     log_cost "$env_json"
     verdict="$(jq -c '.structured_output' <<<"$env_json")"
     [[ "$verdict" != "null" ]] || { echo "no structured output for $f" >&2; exit 2; }
@@ -79,6 +79,7 @@ for f in "${files[@]}"; do
   [[ "$(jq -r .pass <<<"$res")" == "true" ]] || failed=1
 done
 
-printf '%s\n' "${results[@]}" | jq -s '{ checked: length, failed: (map(select(.pass|not)) | length), cards: . }' > "$report"
+printf '%s\n' "${results[@]}" | jq -s '{ checked: length, failed: (map(select(.pass|not)) | length), cards: . }' > "$report.tmp"
+mv "$report.tmp" "$report"
 jq -r '.cards[] | "\(if .pass then "PASS" else "FAIL" end)  \(.file)  structural_errors=\(.structural_errors|length)"' "$report"
 exit "$failed"

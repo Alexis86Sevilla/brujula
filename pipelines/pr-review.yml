@@ -1,69 +1,15 @@
 # Triggered ONLY by a branch policy (Build validation). Azure Repos Git ignores `pr:`.
+# Build validation runs THIS file from the PR merge commit, so it holds no steps: everything comes
+# from a template on main (see pipelines/templates/pr-review-job.yml for the Required template check).
 trigger: none
 pr: none
 
-variables:
-  - group: brujula-claude
-  - name: MAX_TURNS
-    value: "6"
-  - name: MAX_BUDGET_USD
-    value: "0.50"
+resources:
+  repositories:
+    - repository: trusted
+      type: git
+      name: MyProject/brujula
+      ref: refs/heads/main
 
-pool:
-  vmImage: ubuntu-24.04
-
-jobs:
-  - job: review
-    timeoutInMinutes: 15
-    # Skip forks: their content must never run next to our secrets.
-    condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
-    steps:
-      - checkout: self
-        fetchDepth: 0
-        persistCredentials: false
-      - template: templates/setup-claude.yml
-      # Scripts come from the TARGET branch, so a PR cannot rewrite the code that sees the secrets.
-      - script: |
-          set -euo pipefail
-          target="${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}"
-          git rev-parse --verify "origin/${target}" >/dev/null   # fetchDepth: 0 already brought origin/*
-          mkdir -p "$(Agent.TempDirectory)/trusted"
-          git archive "origin/${target}" scripts | tar -x -C "$(Agent.TempDirectory)/trusted"
-          chmod +x "$(Agent.TempDirectory)"/trusted/scripts/*.sh
-          echo "##vso[task.setvariable variable=TARGET_BRANCH]${target}"
-        displayName: Take scripts from the target branch
-      # Incremental review: the last commit already reviewed comes from the hidden marker in our threads.
-      - script: |
-          set -euo pipefail
-          last="$("$(Agent.TempDirectory)/trusted/scripts/ado-pr-comment.sh" --last-reviewed)"
-          echo "last reviewed commit: ${last:-none (full review)}"
-          echo "##vso[task.setvariable variable=BASE_SHA]${last}"
-        displayName: Find the last reviewed commit
-        condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
-        env:
-          SYSTEM_ACCESSTOKEN: $(System.AccessToken) # read-only use: list the PR threads
-      - script: |
-          set -euo pipefail
-          "$(Agent.TempDirectory)/trusted/scripts/pr-review.sh" "$(Build.ArtifactStagingDirectory)/review"
-        displayName: Review the diff with Claude
-        continueOnError: true # advisory: a tooling failure must not block the PR
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: $(CLAUDE_CODE_OAUTH_TOKEN)
-          TARGET_BRANCH: $(TARGET_BRANCH)
-          BASE_SHA: $(BASE_SHA)
-          HEAD_REF: $(System.PullRequest.SourceCommitId)
-          MAX_TURNS: $(MAX_TURNS)
-          MAX_BUDGET_USD: $(MAX_BUDGET_USD)
-      - script: |
-          set -euo pipefail
-          "$(Agent.TempDirectory)/trusted/scripts/ado-pr-comment.sh" "$(Build.ArtifactStagingDirectory)/review"
-        displayName: Post review to the pull request
-        condition: and(succeeded(), ne(variables['System.PullRequest.PullRequestId'], ''))
-        env:
-          SYSTEM_ACCESSTOKEN: $(System.AccessToken) # only this step sees the job token
-      - task: PublishPipelineArtifact@1
-        condition: always()
-        inputs:
-          targetPath: $(Build.ArtifactStagingDirectory)/review
-          artifact: review
-        displayName: Keep the review as an artifact
+extends:
+  template: pipelines/templates/pr-review-job.yml@trusted
