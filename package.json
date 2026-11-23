@@ -23,7 +23,7 @@
     "rag:index": "tsx scripts/rag-index.ts",
     "rag:eval": "tsx scripts/rag-eval.ts",
     "build:plugin": "node scripts/build-plugin.mjs",
-    "check:plugin": "npm run build:plugin && git diff --exit-code -- plugin/"
+    "check:plugin": "npm run build:plugin && git diff --exit-code -- plugin/ && test -z \"$(git status --porcelain -- plugin/)\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

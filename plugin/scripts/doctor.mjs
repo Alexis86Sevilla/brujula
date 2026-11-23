@@ -22,7 +22,7 @@ const major = Number(process.versions.node.split(".")[0]);
 check("node-version", major >= 22, `node ${process.versions.node}`, "nvm install 22 && nvm alias default 22");
 
 // 2. The marketplace can be cloned without prompts (that is how Claude Code runs git).
-const git = spawnSync("git", ["ls-remote", url, "HEAD"], {
+const git = spawnSync("git", ["ls-remote", "--", url, "HEAD"], {
   encoding: "utf8",
   env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
   timeout: 20_000,

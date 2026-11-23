@@ -166,6 +166,20 @@ describe("plugin hooks", () => {
     expect(run("guard-bash.sh", { BRUJULA_HOOKS_OFF: "1" })).toMatchObject({ status: 0, stdout: "" });
   });
 
+  it("BRUJULA_HOOKS_OFF never disables the .env guard", () => {
+    const project = mkdtempSync(join(tmpdir(), "hooks-off-"));
+    const r = spawnSync(join(plugin, "scripts/run-hook.sh"), ["protect-paths.sh"], {
+      input: JSON.stringify({
+        hook_event_name: "PreToolUse",
+        tool_name: "Edit",
+        tool_input: { file_path: join(project, ".env") },
+      }),
+      encoding: "utf8",
+      env: { ...process.env, CLAUDE_PROJECT_DIR: project, BRUJULA_HOOKS_OFF: "1" },
+    });
+    expect(r.status).toBe(2);
+  });
+
   it("run-hook.sh skips the Node-stack hooks in a project without those tools", () => {
     const project = mkdtempSync(join(tmpdir(), "not-node-"));
     for (const script of ["format-file.sh", "quality-gate.sh"]) {

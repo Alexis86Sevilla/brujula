@@ -7,8 +7,11 @@ name="${1:?usage: run-hook.sh <hook-script>}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 proj="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-# Personal escape hatch: BRUJULA_HOOKS_OFF=1 claude
-[ "${BRUJULA_HOOKS_OFF:-}" = 1 ] && exit 0
+# Personal escape hatch: BRUJULA_HOOKS_OFF=1 claude. It never disables the secret guards
+# (protect-paths blocks .env files, secret-scan blocks secrets in commits).
+if [ "${BRUJULA_HOOKS_OFF:-}" = 1 ]; then
+  case "$name" in protect-paths.sh|secret-scan.sh) ;; *) exit 0 ;; esac
+fi
 
 case "$name" in
   # Node-stack hooks: only where the project actually has the tools they call.
