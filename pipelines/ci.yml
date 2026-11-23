@@ -1,0 +1,20 @@
+# Validation build for pull requests. Triggered ONLY by a branch policy (Build validation).
+# No secrets and no Claude here: it runs on every PR, including untrusted ones.
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-24.04
+
+steps:
+  - checkout: self
+    persistCredentials: false
+  - template: templates/setup-claude.yml
+    parameters:
+      installClaude: false
+  - script: npm ci
+    displayName: Install dependencies
+  - script: npm run check
+    displayName: Typecheck, lint, format and tests
+  - script: npm run check:plugin
+    displayName: Plugin artifact is built and in sync
