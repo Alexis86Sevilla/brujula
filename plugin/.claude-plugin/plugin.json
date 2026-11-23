@@ -1,0 +1,17 @@
+{
+  "name": "brujula",
+  "displayName": "Brújula",
+  "version": "0.1.0",
+  "description": "Asistente de equipo: tarjetas bien definidas desde Azure Boards, preguntas sobre la documentación con citas y revisión de código.",
+  "author": { "name": "Equipo Brújula" },
+  "license": "UNLICENSED",
+  "keywords": ["azure-devops", "mcp", "backlog"],
+  "userConfig": {
+    "ado_org": {
+      "type": "string",
+      "title": "Organización de Azure DevOps",
+      "description": "Nombre de la organización: lo que aparece en https://dev.azure.com/<organización>",
+      "required": true
+    }
+  }
+}

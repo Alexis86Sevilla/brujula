@@ -14,7 +14,7 @@ export function runHook(script: string, input: unknown, env: Record<string, stri
   // Drop human overrides (BRUJULA_UNLOCK, BRUJULA_ALLOW_SECRETS) inherited from the session
   // that runs the tests; a test opts into them explicitly through `env`.
   const inherited = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("BRUJULA_")));
-  const r = spawnSync(resolve(projectDir, ".claude/hooks", script), {
+  const r = spawnSync(resolve(projectDir, "plugin/scripts", script), {
     input: JSON.stringify(input),
     encoding: "utf8",
     env: { ...inherited, CLAUDE_PROJECT_DIR: projectDir, ...env },

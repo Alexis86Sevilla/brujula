@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "brujula": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/start-mcp.mjs"],
+      "env": {
+        "BRUJULA_ROOT": "${CLAUDE_PROJECT_DIR}"
+      }
+    },
+    "ado": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp@2.11.0",
+        "${user_config.ado_org}",
+        "--authentication",
+        "azcli",
+        "-d",
+        "core",
+        "work",
+        "work-items",
+        "repositories",
+        "wiki"
+      ]
+    }
+  }
+}

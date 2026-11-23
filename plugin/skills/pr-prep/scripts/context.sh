@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Prints the minimum context needed to write a commit message or a PR description.
+# Runs from anywhere inside the repo. Never fails because of a missing base branch.
+set -euo pipefail
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+
+# origin/HEAD is a symbolic ref: resolve it to a real branch name such as origin/main.
+default_remote="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+
+base=""
+for candidate in $default_remote origin/main origin/master main master; do
+  if git rev-parse --verify --quiet "$candidate" >/dev/null; then
+    base="$candidate"
+    break
+  fi
+done
+
+# Work item id from the branch name: feature/1234-add-chunker, 1234-fix, user/alexis/1234_x
+work_item="none"
+if [[ "$branch" =~ (^|/)([0-9]{2,})[-_] ]]; then
+  work_item="${BASH_REMATCH[2]}"
+fi
+
+echo "branch: $branch"
+echo "base: ${base:-none}"
+echo "work-item: $work_item"
+echo
+echo "## status"
+git status --short | head -30
+echo
+echo "## staged diff stat"
+git diff --cached --stat | tail -15
+echo
+if [ -n "$base" ] && [ "$branch" != "${base#origin/}" ]; then
+  echo "## commits on this branch ($base..HEAD)"
+  git log --oneline "$base..HEAD" | head -30
+  echo
+  echo "## branch diff stat ($base...HEAD)"
+  git diff --stat "$base...HEAD" | tail -30
+else
+  echo "## last commits"
+  git log --oneline -5
+fi

@@ -15,3 +15,5 @@ reports/
 .cache/
 digests/
 review-out/
+!plugin/dist/
+plugin/.data/

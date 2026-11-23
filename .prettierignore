@@ -9,3 +9,7 @@ pipelines/
 .atl/
 reports/
 .stryker-tmp/
+plugin/dist/
+plugin/runtime/
+plugin/skills/
+plugin/agents/

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const script = resolve(".claude/skills/pr-prep/scripts/context.sh");
+const script = resolve("plugin/skills/pr-prep/scripts/context.sh");
 let repo: string;
 
 function git(...args: string[]): string {
