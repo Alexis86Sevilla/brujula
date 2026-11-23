@@ -22,6 +22,7 @@ const HOOKS = [
 ];
 const SKILLS = [
   "backlog",
+  "doctor",
   "explica-modulo",
   "pr-prep",
   "pregunta-wiki",
