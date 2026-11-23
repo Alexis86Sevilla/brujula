@@ -3,15 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
-import { createServer, stubSearch, type SearchFn } from "../src/mcp/server.js";
+import { createServer } from "../src/mcp/server.js";
 
 let root: string;
 let client: Client;
 let server: ReturnType<typeof createServer>;
 
-async function connect(search: SearchFn = stubSearch) {
+async function connect() {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  server = createServer({ root, search });
+  server = createServer({ root });
   await server.connect(serverTransport);
   client = new Client({ name: "test-harness", version: "1.0.0" });
   await client.connect(clientTransport);
@@ -32,15 +32,10 @@ afterEach(async () => {
 });
 
 describe("tools", () => {
-  it("lists the four tools", async () => {
+  it("lists the three tools", async () => {
     await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual([
-      "brujula_adr_create",
-      "brujula_card_lint",
-      "brujula_conventions",
-      "brujula_search_docs",
-    ]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["brujula_adr_create", "brujula_card_lint", "brujula_conventions"]);
   });
 
   it("brujula_conventions lists topics and serves one", async () => {
@@ -84,28 +79,6 @@ describe("tools", () => {
     await connect();
     const r = await client.callTool({ name: "brujula_adr_create", arguments: { title: "x" } });
     expect(r.isError).toBe(true);
-  });
-
-  it("brujula_search_docs reports the stub honestly", async () => {
-    await connect();
-    const r = await client.callTool({ name: "brujula_search_docs", arguments: { query: "deploy process" } });
-    expect(r.isError).toBe(true);
-    expect(firstText(r)).toContain("module 7");
-  });
-
-  it("brujula_search_docs formats hits with source and lines", async () => {
-    await connect(async () => [
-      {
-        source: "wiki/deploy.md",
-        heading: "Rollback",
-        startLine: 10,
-        endLine: 22,
-        score: 0.5,
-        text: "Run the rollback job.",
-      },
-    ]);
-    const r = await client.callTool({ name: "brujula_search_docs", arguments: { query: "rollback" } });
-    expect(firstText(r)).toContain("wiki/deploy.md:10-22 (Rollback)");
   });
 });
 

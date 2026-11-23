@@ -27,8 +27,6 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
 ## Lo que no es obvio
 - Los textos de usuario y las tarjetas de trabajo se escriben en español; el código, los
   comentarios, los nombres de ficheros y de commits, en inglés.
-- La fuente del RAG es un clon local del wiki de Azure DevOps (un repo git). Nunca indexar
-  ficheros con secretos ni datos de clientes. Ver `.claude/rules/rag.md`.
 - Los work items siguen un estándar ligero: título como resultado, "Por qué", "Qué cambia",
   "Cómo" (si hay operación), "Hecho cuando" (2-6 criterios comprobables), "Riesgo" (si es real)
   y una línea final con fuera de alcance, estimación y dependencias. Cada cosa se dice una vez.

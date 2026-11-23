@@ -35,8 +35,8 @@ Ejecuta `/mcp`: `plugin:brujula:brujula` y `plugin:brujula:ado` deben aparecer c
 En una sesión de `claude`:
 
 - `/plugin` lista `brujula@brujula-equipo` como habilitado.
-- `/brujula:` muestra las skills (backlog, doctor, explica-modulo, pr-prep, pregunta-wiki,
-  publicar, sprint-sync, tareas, tarjeta, tarjeta-a-boards).
+- `/brujula:` muestra las skills (backlog, doctor, explica-modulo, pr-prep, publicar,
+  sprint-sync, tareas, tarjeta, tarjeta-a-boards).
 - Pregunta: "Usa brujula_conventions y dime qué reglas devuelve". Debe llamar a la herramienta.
 - `/brujula:doctor` termina con todas las comprobaciones en verde.
 
@@ -55,7 +55,7 @@ compañero, así que solo cambian cuando alguien publica una etiqueta nueva y ac
 ## Primeros pasos
 
 1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
-2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `/audit-cards`.
+2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `bash scripts/card-lint.sh`.
 
 ## Consejos
 

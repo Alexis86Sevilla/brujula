@@ -14,7 +14,7 @@ describe("protect-paths hook", () => {
 
   it("allows .env.example and normal source files", () => {
     expect(runHook("protect-paths.sh", edit(p(".env.example"))).code).toBe(0);
-    expect(runHook("protect-paths.sh", edit(p("src/ingest/chunk.ts"))).code).toBe(0);
+    expect(runHook("protect-paths.sh", edit(p("src/mcp/server.ts"))).code).toBe(0);
   });
 
   it("blocks config-like paths", () => {

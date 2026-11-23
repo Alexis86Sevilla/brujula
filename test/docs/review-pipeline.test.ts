@@ -15,8 +15,8 @@ function paths(where: string): string[] {
 }
 
 describe("docs/REVIEW-PIPELINE.md", () => {
-  it("has the expected columns and at least 8 layers", () => {
-    expect(rows.length).toBeGreaterThanOrEqual(8);
+  it("has the expected columns and at least 7 layers", () => {
+    expect(rows.length).toBeGreaterThanOrEqual(7);
     for (const r of rows) expect(r.where, `layer ${r.n} has no location`).not.toBe("");
   });
 

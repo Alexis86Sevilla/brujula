@@ -17,7 +17,7 @@ if (!root || !data) {
 const checks = [];
 const check = (name, ok, detail, fix) => checks.push({ name, ok, detail, fix: ok ? "" : fix });
 
-// 1. Node 22 or newer (the bundled server targets node22 and uses node:sqlite).
+// 1. Node 22 or newer (the bundled server targets node22).
 const major = Number(process.versions.node.split(".")[0]);
 check("node-version", major >= 22, `node ${process.versions.node}`, "nvm install 22 && nvm alias default 22");
 

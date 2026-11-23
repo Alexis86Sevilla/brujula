@@ -16,12 +16,9 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "env:check": "bash scripts/env-check.sh",
     "claude-md:check": "bash scripts/check-claude-md.sh",
-    "mutation": "stryker run",
     "claude:red": "BRUJULA_GATE_OFF=1 claude",
     "claude:green": "claude --settings .claude/profiles/green.json",
     "mcp": "tsx src/mcp/main.ts",
-    "rag:index": "tsx scripts/rag-index.ts",
-    "rag:eval": "tsx scripts/rag-eval.ts",
     "build:plugin": "node scripts/build-plugin.mjs",
     "check:plugin": "npm run build:plugin && git diff --exit-code -- plugin/ && test -z \"$(git status --porcelain -- plugin/)\""
   },

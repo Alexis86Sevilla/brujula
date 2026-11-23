@@ -1,7 +1,7 @@
 ---
 name: explica-modulo
 description: Explains a module or folder of this repository to a new teammate, with file and line citations and a short "how to use it" section. Use when the user asks how a part of the code works, wants a map of a folder or says they are new to it.
-when_to_use: Spanish requests such as "explícame qué hace src/ingest", "cómo funciona este módulo", "me incorporo al equipo y no conozco esta carpeta", "dame un mapa de esta parte del código".
+when_to_use: Spanish requests such as "explícame qué hace src/mcp", "cómo funciona este módulo", "me incorporo al equipo y no conozco esta carpeta", "dame un mapa de esta parte del código".
 argument-hint: [path]
 context: fork
 agent: Explore
