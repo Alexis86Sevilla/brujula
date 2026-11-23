@@ -1,19 +1,22 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error -- plain .mjs script of the tarjeta skill, no type declarations
+import { checkCard } from "../plugin/skills/tarjeta/scripts/check-card.mjs";
 import { lintCard } from "../src/mcp/card-lint.js";
 import { CARD_SECTIONS, CARD_STANDARD } from "../src/mcp/standard.js";
 
-const ORIGINAL_STANDARD = `# Work item quality standard
+const EXPECTED_STANDARD = `# Work item quality standard
 
-A card is ready when it has ALL of these sections:
+A card is ready when someone who did not write it can implement and verify it without asking.
+Say each thing once: no story that restates the title, no definition of done that restates the criteria.
+Write the headings in Spanish, in this order:
 1. Title: an outcome, not an activity ("Users can reset their password", not "Password work").
-2. Story or problem statement: "As <who> I want <what> so that <why>", or a plain problem statement.
-3. Context and links: why now, related items, wiki pages, ADRs.
-4. Acceptance criteria: Given/When/Then, each one testable.
-5. Out of scope: what this card deliberately does not do.
-6. Definition of done: tests, docs, review, deployment as applicable.
-7. Estimate/size: one value, with the assumption behind it.
-8. Dependencies: other cards, teams or systems it needs.
-9. Risks: what could make it bigger or fail.
+2. Por qué (required): 2-3 lines: the problem, who suffers it and why now.
+3. Qué cambia (required): the scope, what changes and where; tables are welcome.
+4. Cómo (optional): short steps, only when there is an operation to run; include how to roll back.
+5. Hecho cuando (required): 2-6 checkable criteria, Given/When/Then (Dado/Cuando/Entonces) or a verifiable list.
+6. Riesgo (optional): only real risks, each one with its mitigation.
+7. Footer line (required): "**Fuera de alcance:** … · **Estimación:** … · **Dependencias:** …" (size XS-XL or 1-13; "ninguna" is valid).
 
 INVEST check: Independent, Negotiable, Valuable, Estimable, Small, Testable.
 If a card fails INVEST (usually Small or Testable), propose a split instead of polishing it.
@@ -21,91 +24,97 @@ If a card fails INVEST (usually Small or Testable), propose a split instead of p
 
 const complete = `# Los usuarios restablecen su contraseña
 
-## Historia
-Como usuario quiero restablecer mi contraseña.
+## Por qué
+Hoy hay que pedirlo a soporte y tarda un día.
 
-## Contexto
-Hoy hay que pedirlo a soporte.
+## Qué cambia
+Un enlace "He olvidado mi contraseña" en el login.
 
-## Criterios de aceptación
+## Hecho cuando
 - **Dado** un usuario registrado, **cuando** pide el enlace, **entonces** recibe un correo.
+- **Dado** un correo desconocido, **cuando** pide el enlace, **entonces** ve el mismo mensaje.
 
-## Fuera de alcance
-- Doble factor.
-
-## Definición de hecho
-- [ ] Tests
-
-## Estimación
-S
-
-## Dependencias
-- Ninguna.
-
-## Riesgos
-- Correos en spam.
+**Fuera de alcance:** doble factor · **Estimación:** S · **Dependencias:** ninguna
 `;
 
+const REQUIRED = CARD_SECTIONS.filter((s) => s.required).map((s) => s.id);
+
 describe("CARD_STANDARD", () => {
-  it("is byte-identical to the original text", () => {
-    expect(CARD_STANDARD).toBe(ORIGINAL_STANDARD);
+  it("matches the agreed light format text", () => {
+    expect(CARD_STANDARD).toBe(EXPECTED_STANDARD);
   });
-  it("has 9 sections with unique kebab-case ids", () => {
-    expect(CARD_SECTIONS).toHaveLength(9);
-    expect(new Set(CARD_SECTIONS.map((s) => s.id)).size).toBe(9);
+  it("has 7 sections with unique kebab-case ids, 5 of them required", () => {
+    expect(CARD_SECTIONS).toHaveLength(7);
+    expect(new Set(CARD_SECTIONS.map((s) => s.id)).size).toBe(7);
     for (const s of CARD_SECTIONS) expect(s.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
+    expect(REQUIRED).toEqual(["title", "why", "what-changes", "done-when", "footer"]);
   });
 });
 
 describe("lintCard", () => {
   it("accepts a complete Spanish card", () => {
-    expect(lintCard(complete)).toEqual({ ok: true, missing: [], empty: [], gwt: true });
+    expect(lintCard(complete)).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true });
   });
 
-  it("reports everything missing for an empty card", () => {
+  it("reports every required section missing for an empty card", () => {
     const r = lintCard("");
     expect(r.ok).toBe(false);
-    expect(r.missing).toEqual(CARD_SECTIONS.map((s) => s.id));
-    expect(r.gwt).toBe(false);
+    expect(r.missing).toEqual(REQUIRED);
+    expect(r.criteria).toBe(false);
   });
 
   it("flags headings with empty bodies and a blank title", () => {
-    const r = lintCard("# \n\n## Historia\n\n## Criterios de aceptación\n   \n## Riesgos\n- x\n");
-    expect(r.empty).toEqual(expect.arrayContaining(["title", "story", "acceptance-criteria"]));
-    expect(r.missing).toContain("context");
-    expect(r.gwt).toBe(false);
+    const r = lintCard("# \n\n## Por qué\n\n## Hecho cuando\n   \n## Riesgo\n- x\n");
+    expect(r.empty).toEqual(expect.arrayContaining(["title", "why", "done-when"]));
+    expect(r.missing).toEqual(["what-changes", "footer"]);
+    expect(r.criteria).toBe(false);
   });
 
-  it("accepts English headings and Given/When/Then, case and accent insensitive", () => {
-    const md = complete
-      .replace("Criterios de aceptación", "ACCEPTANCE CRITERIA")
-      .replace(/Dado.*\n/, "- GIVEN a user, when asking, then mail.\n")
-      .replace("Estimación", "Estimate/size");
-    expect(lintCard(md).ok).toBe(true);
-    expect(lintCard(complete.replace("aceptación", "ACEPTACION")).ok).toBe(true);
-  });
-
-  it("requires all three keywords in a single criterion", () => {
-    const md = complete.replace(/- \*\*Dado.*\n/, "- Dado un usuario\n- cuando pide\n- entonces recibe\n");
-    const r = lintCard(md);
-    expect(r.gwt).toBe(false);
+  it("reports old heavy-format headings as legacy", () => {
+    const r = lintCard(`${complete}\n## Historia\nComo usuario...\n\n## Definición de hecho\n- [ ] Tests\n`);
+    expect(r.legacy).toEqual(["story", "definition-of-done"]);
     expect(r.ok).toBe(false);
   });
 
-  it("accepts a Given/When/Then paragraph without bullets", () => {
-    const md = complete.replace(
-      /- \*\*Dado.*\n/,
-      "Dado un usuario,\ncuando pide el enlace,\nentonces recibe un correo.\n",
-    );
-    expect(lintCard(md).gwt).toBe(true);
+  it("accepts a plain checklist and requires 2-6 criteria", () => {
+    expect(
+      lintCard(complete.replace(/- \*\*Dado.*\n- \*\*Dado.*\n/, "- [ ] Llega el correo.\n- [ ] Caduca en 1 h.\n")).ok,
+    ).toBe(true);
+    expect(lintCard(complete.replace(/- \*\*Dado.*\n(?=- \*\*Dado)/, "")).criteria).toBe(false);
+    const seven = Array.from({ length: 7 }, (_, i) => `- Criterio ${i + 1}.`).join("\n");
+    expect(lintCard(complete.replace(/- \*\*Dado[\s\S]*?\n\n/, `${seven}\n\n`)).criteria).toBe(false);
   });
 
-  it("ignores headings inside code fences", () => {
-    const md = complete.replace("## Riesgos\n- Correos en spam.\n", "```\n## Riesgos\n- x\n```\n");
-    expect(lintCard(md).empty.concat(lintCard(md).missing)).toContain("risks");
+  it("accepts English headings, case and accent insensitive", () => {
+    const md = complete
+      .replace("Por qué", "WHY")
+      .replace("Qué cambia", "que cambia")
+      .replace("Hecho cuando", "Done when");
+    expect(lintCard(md).ok).toBe(true);
+  });
+
+  it("ignores headings and the footer inside code fences", () => {
+    const md = complete.replace(
+      /\*\*Fuera[^\n]*\n/,
+      "```\n**Fuera de alcance:** x · **Estimación:** S · **Dependencias:** y\n```\n",
+    );
+    expect(lintCard(md).missing).toEqual(["footer"]);
   });
 
   it("handles CRLF", () => {
     expect(lintCard(complete.replace(/\n/g, "\r\n")).ok).toBe(true);
+  });
+});
+
+describe("the two validators agree", () => {
+  const cards = {
+    template: readFileSync("plugin/skills/tarjeta/templates/card.md", "utf8"),
+    good: readFileSync("test/fixtures/cards/good.md", "utf8"),
+    bad: readFileSync("test/fixtures/cards/bad.md", "utf8"),
+  };
+  it.each(Object.entries(cards))("%s gets the same verdict from check-card.mjs and lintCard", (name, md) => {
+    const skill = (checkCard as (m: string) => { ok: boolean })(md).ok;
+    expect(lintCard(md).ok).toBe(skill);
+    expect(skill).toBe(name !== "bad");
   });
 });

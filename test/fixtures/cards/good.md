@@ -1,36 +1,16 @@
-# Los equipos buscan en la wiki sin salir de Claude Code
+# El equipo consulta la versión de Brújula desde la terminal
 
-## Historia
+## Por qué
 
-Como desarrollador quiero preguntar a la wiki desde la terminal para no cambiar de contexto.
+Cuando algo falla nadie sabe qué versión del plugin tiene instalada y hay que abrir ficheros a mano.
 
-## Contexto
+## Qué cambia
 
-Wiki del proyecto en Azure DevOps; el índice local se construye en src/rag/.
+Un comando `brujula --version` que imprime la versión de `plugin.json`.
 
-## Criterios de aceptación
+## Hecho cuando
 
-- Dado un índice construido, cuando pregunto por "convenciones de commit", entonces la respuesta cita fichero y encabezado.
-- Dado una pregunta sin respuesta en la wiki, cuando la formulo, entonces la respuesta es "no lo sé" y no cita nada.
+- [ ] `brujula --version` imprime la misma versión que `plugin/.claude-plugin/plugin.json`.
+- [ ] Con un `plugin.json` ilegible, el comando sale con código 2 y un mensaje claro.
 
-## Fuera de alcance
-
-- Edición de la wiki.
-- Soporte de PDFs.
-
-## Definición de hecho
-
-- [ ] Tests de recuperación en verde.
-- [ ] README actualizado y PR enlazada a la tarjeta.
-
-## Estimación
-
-M (2-3 días)
-
-## Dependencias
-
-- Módulo ingest (src/ingest/) mergeado.
-
-## Riesgos
-
-- El modelo de embeddings puede tardar en cargar la primera vez; mitigación: precalentarlo en el arranque.
+**Fuera de alcance:** actualizar el plugin · **Estimación:** XS · **Dependencias:** ninguna

@@ -34,11 +34,12 @@ tool whose name ends in `_write`.
 5. DRAFT THE CARDS, one at a time, in the order approved:
    - Read [estandar.md](../tarjeta/reference/estandar.md) and the example
      [card.md](../tarjeta/templates/card.md) once. The example is illustrative: never copy its facts.
-   - Write the card in Spanish with exactly the headings of the template.
+   - Write the card in Spanish with the headings of the template; drop `## Cómo` and `## Riesgo`
+     when they do not apply. Say each thing once, but keep every operational detail.
    - Validate it by piping the card markdown through stdin:
      `node ${CLAUDE_PLUGIN_ROOT}/skills/tarjeta/scripts/check-card.mjs -`.
      Fix every listed error and run it again, at most three times; if it still fails, show the errors.
-   - Ground the context and acceptance criteria in the facts from step 3, citing files and versions.
+   - Ground "Por qué", "Qué cambia" and "Hecho cuando" in the facts from step 3, citing files and versions.
    - Never invent facts: links, ADR numbers, people, dates, metrics. Put anything unknown in an extra
      section `## Preguntas abiertas`.
    - Show the card and the checker result, then ask "¿La doy por buena?" and wait. Apply the

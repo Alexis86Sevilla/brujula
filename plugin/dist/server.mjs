@@ -16813,9 +16813,9 @@ function codePointLengthVar(doc, ctx, accessor, inDoubt) {
   doc.write(`const ${v} = typeof ${accessor} === "string" && ${inDoubt} ? ${cpLen}(${accessor}) : ${accessor}.length;`);
   return v;
 }
-function numericOperand(value, label) {
+function numericOperand(value, label2) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new ZodCompileUnsupportedError(`${label} bound of type ${typeof value}`);
+    throw new ZodCompileUnsupportedError(`${label2} bound of type ${typeof value}`);
   }
   return `${value}`;
 }
@@ -29544,9 +29544,9 @@ var require_codegen = /* @__PURE__ */ __commonJSMin(((exports2) => {
     }
   };
   var Label = class extends Node {
-    constructor(label) {
+    constructor(label2) {
       super();
-      this.label = label;
+      this.label = label2;
       this.names = {};
     }
     render({ _n }) {
@@ -29554,9 +29554,9 @@ var require_codegen = /* @__PURE__ */ __commonJSMin(((exports2) => {
     }
   };
   var Break = class extends Node {
-    constructor(label) {
+    constructor(label2) {
       super();
-      this.label = label;
+      this.label = label2;
       this.names = {};
     }
     render({ _n }) {
@@ -29921,11 +29921,11 @@ var require_codegen = /* @__PURE__ */ __commonJSMin(((exports2) => {
     endFor() {
       return this._endBlockNode(For);
     }
-    label(label) {
-      return this._leafNode(new Label(label));
+    label(label2) {
+      return this._leafNode(new Label(label2));
     }
-    break(label) {
-      return this._leafNode(new Break(label));
+    break(label2) {
+      return this._leafNode(new Break(label2));
     }
     return(value) {
       const node2 = new Return();
@@ -39020,66 +39020,73 @@ var CARD_SECTIONS = [
   {
     id: "title",
     name: "Title",
+    required: true,
     description: 'an outcome, not an activity ("Users can reset their password", not "Password work").',
     aliases: ["T\xEDtulo"]
   },
   {
-    id: "story",
-    name: "Story or problem statement",
-    description: '"As <who> I want <what> so that <why>", or a plain problem statement.',
-    aliases: ["Story", "Problem statement", "Historia", "Problema", "Historia o problema"]
+    id: "why",
+    name: "Por qu\xE9",
+    required: true,
+    description: "2-3 lines: the problem, who suffers it and why now.",
+    aliases: ["Why"]
   },
   {
-    id: "context",
-    name: "Context and links",
-    description: "why now, related items, wiki pages, ADRs.",
-    aliases: ["Context", "Contexto", "Contexto y enlaces"]
+    id: "what-changes",
+    name: "Qu\xE9 cambia",
+    required: true,
+    description: "the scope, what changes and where; tables are welcome.",
+    aliases: ["What changes", "Scope", "Alcance"]
   },
   {
-    id: "acceptance-criteria",
-    name: "Acceptance criteria",
-    description: "Given/When/Then, each one testable.",
-    aliases: ["Criterios de aceptaci\xF3n", "Criterios de aceptacion"]
+    id: "how",
+    name: "C\xF3mo",
+    required: false,
+    description: "short steps, only when there is an operation to run; include how to roll back.",
+    aliases: ["How", "Pasos"]
   },
   {
-    id: "out-of-scope",
-    name: "Out of scope",
-    description: "what this card deliberately does not do.",
-    aliases: ["Fuera de alcance"]
+    id: "done-when",
+    name: "Hecho cuando",
+    required: true,
+    description: "2-6 checkable criteria, Given/When/Then (Dado/Cuando/Entonces) or a verifiable list.",
+    aliases: ["Done when"]
   },
   {
-    id: "definition-of-done",
-    name: "Definition of done",
-    description: "tests, docs, review, deployment as applicable.",
-    aliases: ["Definici\xF3n de hecho", "Definicion de hecho", "Definition of done (DoD)"]
+    id: "risk",
+    name: "Riesgo",
+    required: false,
+    description: "only real risks, each one with its mitigation.",
+    aliases: ["Riesgos", "Risk", "Risks"]
   },
   {
-    id: "estimate",
-    name: "Estimate/size",
-    description: "one value, with the assumption behind it.",
-    aliases: ["Estimate", "Size", "Estimaci\xF3n", "Tama\xF1o"]
-  },
-  {
-    id: "dependencies",
-    name: "Dependencies",
-    description: "other cards, teams or systems it needs.",
-    aliases: ["Dependencias"]
-  },
-  {
-    id: "risks",
-    name: "Risks",
-    description: "what could make it bigger or fail.",
-    aliases: ["Riesgos"]
+    id: "footer",
+    name: "Footer line",
+    required: true,
+    description: '"**Fuera de alcance:** \u2026 \xB7 **Estimaci\xF3n:** \u2026 \xB7 **Dependencias:** \u2026" (size XS-XL or 1-13; "ninguna" is valid).',
+    aliases: []
   }
 ];
+var LEGACY_SECTIONS = /* @__PURE__ */ new Map([
+  ["story", ["Historia", "Story", "Problema", "Historia o problema", "Problem statement"]],
+  ["context", ["Contexto", "Context", "Contexto y enlaces"]],
+  ["acceptance-criteria", ["Criterios de aceptaci\xF3n", "Acceptance criteria"]],
+  ["out-of-scope", ["Fuera de alcance", "Out of scope"]],
+  ["definition-of-done", ["Definici\xF3n de hecho", "Definition of done"]],
+  ["estimate", ["Estimaci\xF3n", "Estimate", "Tama\xF1o", "Size"]],
+  ["dependencies", ["Dependencias", "Dependencies"]]
+]);
 var STANDARD_TAIL = `
 INVEST check: Independent, Negotiable, Valuable, Estimable, Small, Testable.
 If a card fails INVEST (usually Small or Testable), propose a split instead of polishing it.
 `;
+var label = (s) => s.id === "title" ? s.name : `${s.name} (${s.required ? "required" : "optional"})`;
 var CARD_STANDARD = `# Work item quality standard
 
-A card is ready when it has ALL of these sections:
-${CARD_SECTIONS.map((s, i) => `${i + 1}. ${s.name}: ${s.description}`).join("\n")}
+A card is ready when someone who did not write it can implement and verify it without asking.
+Say each thing once: no story that restates the title, no definition of done that restates the criteria.
+Write the headings in Spanish, in this order:
+${CARD_SECTIONS.map((s, i) => `${i + 1}. ${label(s)}: ${s.description}`).join("\n")}
 ${STANDARD_TAIL}`;
 
 // src/mcp/card-lint.ts
@@ -39087,33 +39094,27 @@ var normalise = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().
 var ID_BY_HEADING = new Map(
   CARD_SECTIONS.flatMap((s) => [s.name, ...s.aliases].map((h) => [normalise(h), s.id]))
 );
-var GWT_SETS = [
-  [/\bgiven\b/, /\bwhen\b/, /\bthen\b/],
-  [/\bdado\b/, /\bcuando\b/, /\bentonces\b/]
-];
-function criteria(body) {
-  const items = [];
-  let open2 = false;
-  for (const line of body) {
-    if (line.trim() === "") {
-      open2 = false;
-    } else if (open2 && !/^\s*([-*+]|\d+[.)])\s+/.test(line)) {
-      items[items.length - 1] += ` ${line}`;
-    } else {
-      items.push(line);
-      open2 = true;
-    }
-  }
-  return items;
+var LEGACY_BY_HEADING = new Map(
+  [...LEGACY_SECTIONS].flatMap(([id, headings]) => headings.map((h) => [normalise(h), id]))
+);
+function isFooter(line) {
+  const plain = normalise(line.replace(/[*_]/g, ""));
+  const at = ["fuera de alcance:", "estimacion:", "dependencias:"].map((k) => plain.indexOf(k));
+  return at.every((i) => i >= 0) && at[0] < at[1] && at[1] < at[2];
 }
 function lintCard(markdown) {
   const bodies = /* @__PURE__ */ new Map();
+  const legacy = [];
   let inFence = false;
   let current = null;
   let seenH1 = false;
   for (const line of markdown.replace(/\r\n?/g, "\n").split("\n")) {
-    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
-    const m = inFence ? null : /^(#{1,2})\s+(.*?)\s*#*\s*$/.exec(line);
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = /^(#{1,2})\s+(.*?)\s*#*\s*$/.exec(line);
     if (m?.[1] === "#") {
       current = null;
       if (!seenH1) {
@@ -39121,13 +39122,18 @@ function lintCard(markdown) {
         bodies.set("title", [m[2] ?? ""]);
       }
     } else if (m) {
-      const id = ID_BY_HEADING.get(normalise(m[2] ?? ""));
-      if (id && id !== "title" && !bodies.has(id)) {
+      const heading = normalise(m[2] ?? "");
+      const id = ID_BY_HEADING.get(heading);
+      const old = LEGACY_BY_HEADING.get(heading);
+      if (old && !legacy.includes(old)) legacy.push(old);
+      if (id && id !== "title" && id !== "footer" && !bodies.has(id)) {
         current = [];
         bodies.set(id, current);
       } else {
         current = null;
       }
+    } else if (!bodies.has("footer") && isFooter(line)) {
+      bodies.set("footer", [line]);
     } else if (current) {
       current.push(line);
     }
@@ -39136,19 +39142,20 @@ function lintCard(markdown) {
   const empty = [];
   for (const s of CARD_SECTIONS) {
     const body = bodies.get(s.id);
-    if (!body) missing.push(s.id);
-    else if (body.join("\n").trim() === "") empty.push(s.id);
+    if (!body) {
+      if (s.required) missing.push(s.id);
+    } else if (body.join("\n").trim() === "") empty.push(s.id);
   }
-  let gwt = true;
-  const ac = bodies.get("acceptance-criteria");
-  if (ac) {
-    gwt = criteria(ac).some((c) => {
-      const lower = c.toLowerCase();
-      return GWT_SETS.some((set2) => set2.every((re) => re.test(lower)));
-    });
-  }
-  if (!ac || ac.join("").trim() === "") gwt = false;
-  return { ok: missing.length === 0 && empty.length === 0 && gwt, missing, empty, gwt };
+  const done = bodies.get("done-when") ?? [];
+  const items = done.filter((l) => /^([-*+]|\d+[.)])\s+\S/.test(l)).length;
+  const criteria = items >= 2 && items <= 6;
+  return {
+    ok: missing.length === 0 && empty.length === 0 && legacy.length === 0 && criteria,
+    missing,
+    empty,
+    legacy,
+    criteria
+  };
 }
 
 // src/mcp/conventions.ts
@@ -39274,15 +39281,16 @@ function createServer(deps = { root: process.cwd(), search: stubSearch }) {
     "brujula_card_lint",
     {
       title: "Lint a work item card",
-      description: "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: required sections present and non-empty, and acceptance criteria in Given/When/Then (Dado/Cuando/Entonces). Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI (e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
+      description: "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: required sections (Por qu\xE9, Qu\xE9 cambia, Hecho cuando) present and non-empty, 2-6 criteria in Hecho cuando, the footer line (Fuera de alcance \xB7 Estimaci\xF3n \xB7 Dependencias) and no old heavy-format headings. Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI (e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
       inputSchema: strictObject({
         markdown: string2().describe("The full card as Markdown: H1 title and H2 sections, English or Spanish headings")
       }),
       outputSchema: object({
-        ok: boolean2().describe("True when nothing is missing or empty and the criteria use Given/When/Then"),
-        missing: array(string2()).describe("Ids of sections with no heading"),
+        ok: boolean2().describe("True when nothing is missing, empty or legacy and the criteria count is 2-6"),
+        missing: array(string2()).describe("Ids of required sections with no heading (or no footer line)"),
         empty: array(string2()).describe("Ids of sections whose heading has no content"),
-        gwt: boolean2().describe("True when at least one acceptance criterion is a full Given/When/Then")
+        legacy: array(string2()).describe("Ids of old heavy-format headings (Historia, Definici\xF3n de hecho...) to merge into the new ones"),
+        criteria: boolean2().describe("True when Hecho cuando has 2-6 checkable items")
       }),
       annotations: { readOnlyHint: true, openWorldHint: false }
     },
@@ -39293,11 +39301,12 @@ function createServer(deps = { root: process.cwd(), search: stubSearch }) {
         );
       }
       const result = lintCard(markdown);
-      const summary = result.ok ? "Card OK: all sections present and filled, acceptance criteria in Given/When/Then." : [
+      const summary = result.ok ? "Card OK: required sections present and filled, 2-6 criteria in Hecho cuando, footer line present." : [
         "Card NOT ready.",
         result.missing.length ? `Missing sections: ${result.missing.join(", ")}.` : "",
         result.empty.length ? `Empty sections: ${result.empty.join(", ")}.` : "",
-        result.gwt ? "" : "Acceptance criteria need at least one full Given/When/Then (Dado/Cuando/Entonces) criterion."
+        result.legacy.length ? `Old-format sections to merge into the new ones: ${result.legacy.join(", ")}.` : "",
+        result.criteria ? "" : "Hecho cuando needs 2-6 checkable items (Dado/Cuando/Entonces or a verifiable list)."
       ].filter(Boolean).join(" ");
       return { content: [{ type: "text", text: summary }], structuredContent: result };
     }

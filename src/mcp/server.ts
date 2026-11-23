@@ -137,7 +137,8 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
       title: "Lint a work item card",
       description:
         "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: " +
-        "required sections present and non-empty, and acceptance criteria in Given/When/Then (Dado/Cuando/Entonces). " +
+        "required sections (Por qué, Qué cambia, Hecho cuando) present and non-empty, 2-6 criteria in Hecho cuando, " +
+        "the footer line (Fuera de alcance · Estimación · Dependencias) and no old heavy-format headings. " +
         "Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI " +
         "(e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. " +
         "Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
@@ -147,10 +148,13 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
           .describe("The full card as Markdown: H1 title and H2 sections, English or Spanish headings"),
       }),
       outputSchema: z.object({
-        ok: z.boolean().describe("True when nothing is missing or empty and the criteria use Given/When/Then"),
-        missing: z.array(z.string()).describe("Ids of sections with no heading"),
+        ok: z.boolean().describe("True when nothing is missing, empty or legacy and the criteria count is 2-6"),
+        missing: z.array(z.string()).describe("Ids of required sections with no heading (or no footer line)"),
         empty: z.array(z.string()).describe("Ids of sections whose heading has no content"),
-        gwt: z.boolean().describe("True when at least one acceptance criterion is a full Given/When/Then"),
+        legacy: z
+          .array(z.string())
+          .describe("Ids of old heavy-format headings (Historia, Definición de hecho...) to merge into the new ones"),
+        criteria: z.boolean().describe("True when Hecho cuando has 2-6 checkable items"),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -163,14 +167,15 @@ export function createServer(deps: ServerDeps = { root: process.cwd(), search: s
       }
       const result = lintCard(markdown);
       const summary = result.ok
-        ? "Card OK: all sections present and filled, acceptance criteria in Given/When/Then."
+        ? "Card OK: required sections present and filled, 2-6 criteria in Hecho cuando, footer line present."
         : [
             "Card NOT ready.",
             result.missing.length ? `Missing sections: ${result.missing.join(", ")}.` : "",
             result.empty.length ? `Empty sections: ${result.empty.join(", ")}.` : "",
-            result.gwt
+            result.legacy.length ? `Old-format sections to merge into the new ones: ${result.legacy.join(", ")}.` : "",
+            result.criteria
               ? ""
-              : "Acceptance criteria need at least one full Given/When/Then (Dado/Cuando/Entonces) criterion.",
+              : "Hecho cuando needs 2-6 checkable items (Dado/Cuando/Entonces or a verifiable list).",
           ]
             .filter(Boolean)
             .join(" ");

@@ -31,7 +31,7 @@ describe("card-lint.sh", () => {
   it("fails a structurally broken card even if the model would approve", () => {
     const { status, report } = run(only("bad.md"));
     expect(status).toBe(1);
-    expect(report.cards[0].structural_errors).toContain("missing section: ## Fuera de alcance");
+    expect(report.cards[0].structural_errors).toContain("missing section: ## Hecho cuando");
   });
 
   it("does not call the model for a structurally broken card", () => {

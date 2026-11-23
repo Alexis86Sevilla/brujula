@@ -113,14 +113,10 @@ describe("brujula_card_lint", () => {
   const lint = (markdown: string) => client.callTool({ name: "brujula_card_lint", arguments: { markdown } });
   const complete = [
     "# Los usuarios restablecen su contraseña",
-    "## Historia\nComo usuario quiero restablecer mi contraseña.",
-    "## Contexto\nHoy hay que pedirlo a soporte.",
-    "## Criterios de aceptación\n- **Dado** un usuario, **cuando** pide el enlace, **entonces** recibe un correo.",
-    "## Fuera de alcance\n- Doble factor.",
-    "## Definición de hecho\n- [ ] Tests",
-    "## Estimación\nS",
-    "## Dependencias\n- Ninguna.",
-    "## Riesgos\n- Correos en spam.",
+    "## Por qué\nHoy hay que pedirlo a soporte.",
+    "## Qué cambia\nUn enlace en el login.",
+    "## Hecho cuando\n- **Dado** un usuario, **cuando** pide el enlace, **entonces** recibe un correo.\n- [ ] El enlace caduca en 1 h.",
+    "**Fuera de alcance:** doble factor · **Estimación:** S · **Dependencias:** ninguna",
   ].join("\n\n");
 
   it("is advertised as read-only with an output schema", async () => {
@@ -131,28 +127,35 @@ describe("brujula_card_lint", () => {
     expect(tool?.outputSchema).toBeDefined();
   });
 
-  it("reports every section missing for an empty card", async () => {
+  it("reports every required section missing for an empty card", async () => {
     await connect();
     const r = await lint("");
     expect(r.isError).toBeFalsy();
-    expect(r.structuredContent).toMatchObject({ ok: false, gwt: false });
-    expect((r.structuredContent as { missing: string[] }).missing).toHaveLength(9);
+    expect(r.structuredContent).toMatchObject({ ok: false, criteria: false });
+    expect((r.structuredContent as { missing: string[] }).missing).toHaveLength(5);
     expect(firstText(r)).toContain("NOT ready");
   });
 
   it("accepts a complete Spanish card", async () => {
     await connect();
     const r = await lint(complete);
-    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], gwt: true });
+    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true });
   });
 
   it("flags headings with empty bodies", async () => {
     await connect();
-    const r = await lint("# Titulo valido de tarjeta\n\n## Historia\n\n## Contexto\n  \n");
+    const r = await lint("# Titulo valido de tarjeta\n\n## Por qué\n\n## Qué cambia\n  \n");
     const sc = r.structuredContent as { ok: boolean; empty: string[]; missing: string[] };
     expect(sc.ok).toBe(false);
-    expect(sc.empty).toEqual(["story", "context"]);
-    expect(sc.missing).toContain("risks");
+    expect(sc.empty).toEqual(["why", "what-changes"]);
+    expect(sc.missing).toContain("footer");
+  });
+
+  it("names old heavy-format headings in the summary", async () => {
+    await connect();
+    const r = await lint(`${complete}\n\n## Historia\nComo usuario quiero algo.`);
+    expect(r.structuredContent).toMatchObject({ ok: false, legacy: ["story"] });
+    expect(firstText(r)).toContain("Old-format sections to merge into the new ones: story.");
   });
 
   it("returns a guided isError (no exception) for a 1 MB input", async () => {

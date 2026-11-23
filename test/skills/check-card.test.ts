@@ -4,11 +4,15 @@ import { describe, expect, it } from "vitest";
 
 const script = "plugin/skills/tarjeta/scripts/check-card.mjs";
 const template = readFileSync("plugin/skills/tarjeta/templates/card.md", "utf8").replace(/\r\n/g, "\n");
+const good = readFileSync("test/fixtures/cards/good.md", "utf8");
 
 function run(markdown: string): { status: number | null; json: { ok: boolean; errors: string[] } } {
   const r = spawnSync("node", [script, "-"], { input: markdown, encoding: "utf8" });
   return { status: r.status, json: JSON.parse(r.stdout) };
 }
+const errorsOf = (markdown: string): string => run(markdown).json.errors.join("\n");
+const withDone = (items: string[]): string =>
+  template.replace(/## Hecho cuando\n[\s\S]*?\n\n## Riesgo/, `## Hecho cuando\n${items.join("\n")}\n\n## Riesgo`);
 
 describe("check-card.mjs", () => {
   it("accepts the reference template", () => {
@@ -17,47 +21,81 @@ describe("check-card.mjs", () => {
     expect(r.status).toBe(0);
   });
 
-  it("reports every missing section", () => {
-    const r = run("# Un título válido de tarjeta\n\n## Historia\nComo dev quiero algo.\n");
+  it("accepts a card without the optional Cómo and Riesgo sections", () => {
+    expect(run(good).json.errors).toEqual([]);
+  });
+
+  it("reports every missing required section and the footer line", () => {
+    const r = run("# Un título válido de tarjeta\n");
     expect(r.status).toBe(1);
     const joined = r.json.errors.join("\n");
-    for (const s of [
-      "Contexto",
-      "Criterios de aceptación",
-      "Fuera de alcance",
-      "Definición de hecho",
-      "Estimación",
-      "Dependencias",
-      "Riesgos",
-    ]) {
-      expect(joined).toContain(`missing section: ## ${s}`);
-    }
+    for (const s of ["Por qué", "Qué cambia", "Hecho cuando"]) expect(joined).toContain(`missing section: ## ${s}`);
+    expect(joined).toContain("missing footer line");
+    expect(joined).not.toContain("## Cómo");
+    expect(joined).not.toContain("## Riesgo");
   });
 
-  it("rejects acceptance criteria that are not Dado/Cuando/Entonces", () => {
-    const bad = template.replace(
-      /## Criterios de aceptación[\s\S]*?## Fuera/,
-      "## Criterios de aceptación\n- Que funcione bien\n- Que sea rápido\n\n## Fuera",
+  it("rejects the old heavy-format headings and names the replacement", () => {
+    const joined = errorsOf(
+      `${template}\n## Historia\nComo usuario quiero algo.\n\n## Definición de hecho\n- [ ] Tests\n`,
     );
-    const r = run(bad);
-    expect(r.status).toBe(1);
-    expect(r.json.errors.join("\n")).toMatch(/Dado\/Cuando\/Entonces/);
+    expect(joined).toContain("old-format section: ## Historia (use ## Por qué)");
+    expect(joined).toContain("old-format section: ## Definición de hecho (use ## Hecho cuando)");
   });
 
-  it("rejects placeholders and an invalid estimate", () => {
-    const bad = template
-      .replace("## Estimación\nM", "## Estimación\nmucho")
-      .replace("Acceso de lectura", "<completar>");
-    const r = run(bad);
-    expect(r.json.errors.join("\n")).toMatch(/Estimación must contain a size/);
-    expect(r.json.errors.join("\n")).toMatch(/placeholder left in section: ## Dependencias/);
+  it("accepts a plain verifiable list in Hecho cuando and requires 2-6 items", () => {
+    expect(run(withDone(["- [ ] El log no muestra errores.", "- [ ] El pedido de prueba se cobra."])).json.ok).toBe(
+      true,
+    );
+    expect(errorsOf(withDone(["- Solo uno."]))).toContain("## Hecho cuando needs 2-6 checkable items, found 1");
+    const seven = Array.from({ length: 7 }, (_, i) => `- Criterio ${i + 1}.`);
+    expect(errorsOf(withDone(seven))).toContain("## Hecho cuando needs 2-6 checkable items, found 7");
+  });
+
+  it("requires a mitigation for every risk", () => {
+    const bad = template.replace("; mitigación: no revocar hasta comprobar los tres servicios", "");
+    expect(errorsOf(bad)).toContain("## Riesgo: every risk needs its mitigation");
+  });
+
+  it("limits Por qué to four lines", () => {
+    const long = template.replace("## Por qué\n", "## Por qué\nUna.\nDos.\nTres.\n");
+    expect(errorsOf(long)).toContain("## Por qué must be at most 4 lines, found 5");
+  });
+
+  it("checks the footer line: labels, values and size", () => {
+    expect(errorsOf(template.replace("**Estimación:** S", "**Estimación:** mucho"))).toContain(
+      "footer: Estimación must contain a size: XS, S, M, L, XL or 1/2/3/5/8/13",
+    );
+    expect(errorsOf(template.replace("**Estimación:** S", "**Estimación:** 4 h (talla M)"))).toBe("");
+    expect(
+      errorsOf(template.replace(" · **Dependencias:** acceso de administrador a la consola de la pasarela", "")),
+    ).toContain("missing footer line");
+    expect(
+      errorsOf(
+        template.replace("**Fuera de alcance:** limpiar el log donde apareció la clave", "**Fuera de alcance:**"),
+      ),
+    ).toContain("footer: empty value for Fuera de alcance");
+  });
+
+  it("accepts the footer before an extra Preguntas abiertas section", () => {
+    expect(errorsOf(`${template}\n## Preguntas abiertas\n- ¿Quién tiene acceso a la consola?\n`)).toBe("");
+  });
+
+  it("flags placeholders in prose but not inside inline code", () => {
+    expect(errorsOf(template.replace("API de pedidos", "<completar>"))).toContain(
+      "placeholder left in section: ## Qué cambia",
+    );
+    expect(errorsOf(template.replace("`PAYMENTS_API_KEY`", "`PAYMENTS_API_KEY=<nueva>`"))).toBe("");
+    expect(errorsOf(template.replace("**Estimación:** S", "**Estimación:** <talla>"))).toContain(
+      "placeholder left in footer line",
+    );
   });
 
   it("accepts the Spanish word 'todo' but rejects an uppercase TODO marker", () => {
-    const spanish = template.replace("Acceso de lectura", "Acceso de lectura a todo");
-    expect(run(spanish).json.errors).toEqual([]);
-    const marker = template.replace("Acceso de lectura", "TODO acceso de lectura");
-    expect(run(marker).json.errors.join("\n")).toMatch(/placeholder left in section: ## Dependencias/);
+    expect(errorsOf(template.replace("Primero en QA", "Todo primero en QA"))).toBe("");
+    expect(errorsOf(template.replace("Primero en QA", "TODO primero en QA"))).toContain(
+      "placeholder left in section: ## Cómo",
+    );
   });
 
   it("works on a file path and exits 2 without arguments", () => {

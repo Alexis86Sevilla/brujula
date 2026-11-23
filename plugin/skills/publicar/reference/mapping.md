@@ -7,9 +7,9 @@ Shared by `publicar` and `tarjeta-a-boards`. Send every long text field with `fo
 | Field (reference name) | Value |
 |---|---|
 | `System.Title` | The card H1, verbatim. |
-| `System.Description` | `## Historia`, `## Contexto`, `## Fuera de alcance`, `## Dependencias`, `## Riesgos`, `## Definición de hecho` and, if present, `## Preguntas abiertas`, each under its own heading, in that order. |
-| `Microsoft.VSTS.Common.AcceptanceCriteria` | The `## Criterios de aceptación` bullets, verbatim (Dado/Cuando/Entonces). |
-| `Microsoft.VSTS.Scheduling.Effort` | The size from `## Estimación` as a number: XS=1, S=2, M=3, L=5, XL=8; numeric sizes are sent as they are. |
+| `System.Description` | `## Por qué`, `## Qué cambia`, `## Cómo` and `## Riesgo` (those present), each under its own heading, then the footer line verbatim and, if present, `## Preguntas abiertas`, in that order. |
+| `Microsoft.VSTS.Common.AcceptanceCriteria` | The `## Hecho cuando` items, verbatim. |
+| `Microsoft.VSTS.Scheduling.Effort` | The size from `Estimación:` in the footer line as a number: XS=1, S=2, M=3, L=5, XL=8; numeric sizes are sent as they are. |
 
 ## Feature
 
