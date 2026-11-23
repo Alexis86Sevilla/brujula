@@ -22,9 +22,15 @@ if [[ "$branch" =~ (^|/)([0-9]{2,})[-_] ]]; then
   work_item="${BASH_REMATCH[2]}"
 fi
 
+# Whether the project uses pull requests: true | false | unset | invalid (.claude/brujula.json).
+# shellcheck source=../../../scripts/lib/project-config.sh
+source "$(dirname "$0")/../../../scripts/lib/project-config.sh"
+pull_requests="$(pull_requests_setting "$(git rev-parse --show-toplevel)")"
+
 echo "branch: $branch"
 echo "base: ${base:-none}"
 echo "work-item: $work_item"
+echo "pull-requests: $pull_requests"
 echo
 echo "## status"
 git status --short | head -30

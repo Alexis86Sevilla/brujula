@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -37,6 +37,17 @@ describe("pr-prep context.sh", () => {
     expect(out).toContain("work-item: 1234");
     expect(out).toContain("feat(ingest): add chunker");
     expect(out).toContain("b.txt");
+  });
+
+  it("reports whether the project uses pull requests, or unset when it has not said", () => {
+    expect(run()).toContain("pull-requests: unset");
+    mkdirSync(join(repo, ".claude"));
+    writeFileSync(join(repo, ".claude/brujula.json"), '{ "pullRequests": false }');
+    expect(run()).toContain("pull-requests: false");
+    writeFileSync(join(repo, ".claude/brujula.json"), '{ "pullRequests": true }');
+    expect(run()).toContain("pull-requests: true");
+    writeFileSync(join(repo, ".claude/brujula.json"), "not json");
+    expect(run()).toContain("pull-requests: invalid");
   });
 
   it("reports work-item none and still works on the base branch", () => {

@@ -54,5 +54,26 @@ check(
   `CLAUDE_PLUGIN_DATA="${data}" node "${join(root, "scripts/start-mcp.mjs")}" --install-only`,
 );
 
+// 4. The project says whether it uses pull requests (guard-bash.sh and pr-prep read it).
+const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+const configFile = join(projectDir, ".claude", "brujula.json");
+let usesPrs;
+try {
+  const value = JSON.parse(readFileSync(configFile, "utf8"))?.pullRequests;
+  if (typeof value === "boolean") usesPrs = value;
+} catch {
+  // missing or not JSON: reported below
+}
+check(
+  "pull-requests",
+  usesPrs !== undefined,
+  usesPrs === undefined
+    ? `not declared in ${configFile}`
+    : usesPrs
+      ? "this project uses pull requests: pushing to main is blocked"
+      : "this project does not use pull requests: pushing to main is allowed",
+  `echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
+);
+
 console.log(JSON.stringify(checks, null, 2));
 process.exit(checks.every((c) => c.ok) ? 0 : 1);

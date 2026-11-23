@@ -1,6 +1,6 @@
 ---
 name: revisor
-description: Read-only code reviewer. Use proactively after code changes and before opening a PR. Never edits files.
+description: Read-only code reviewer. Use proactively after code changes and before opening a PR or merging into main. Never edits files.
 tools: Read, Grep, Glob
 model: sonnet
 maxTurns: 12

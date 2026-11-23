@@ -60,6 +60,10 @@ compañero, así que solo cambian cuando alguien publica una etiqueta nueva y ac
 ## Consejos
 
 - Tras instalar o actualizar el plugin, ejecuta `/reload-plugins` o abre un `claude` nuevo (no `--resume`).
+- Cada proyecto declara si usa pull requests en `.claude/brujula.json` (`{ "pullRequests": true }`
+  o `false`), versionado en el repo. Con `true` el plugin bloquea el push directo a `main` y
+  `/brujula:pr-prep` redacta la descripción de la PR; con `false` permite el push y propone el
+  merge local. Si falta, Claude te lo pregunta la primera vez y `/brujula:doctor` lo avisa.
 - Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Los bloqueos de `.env` y de
   secretos siguen activos.
 - Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.

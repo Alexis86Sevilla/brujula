@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: Diagnoses the Brujula plugin environment of this machine (Node version, git access to the marketplace without prompts, native runtime dependencies) and tells the user the exact command that fixes each failing check. Use when the plugin, its MCP server or an update does not work.
+description: Diagnoses the Brujula plugin environment of this machine and project (Node version, git access to the marketplace without prompts, native runtime dependencies, whether the project declares if it uses pull requests) and tells the user the exact command that fixes each failing check. Use when the plugin, its MCP server or an update does not work.
 disable-model-invocation: true
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs *)
 ---
