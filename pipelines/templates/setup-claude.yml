@@ -1,0 +1,20 @@
+# Shared setup: Node 22 and a pinned Claude Code CLI.
+parameters:
+  - name: claudeVersion
+    type: string
+    default: "2.1.323"
+  - name: installClaude
+    type: boolean
+    default: true
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "22.x"
+    displayName: Node 22
+  - ${{ if eq(parameters.installClaude, true) }}:
+      - script: |
+          set -euo pipefail
+          npm install -g "@anthropic-ai/claude-code@${{ parameters.claudeVersion }}"
+          claude --version
+        displayName: Install Claude Code ${{ parameters.claudeVersion }}
