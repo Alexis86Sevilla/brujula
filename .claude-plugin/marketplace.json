@@ -6,7 +6,7 @@
     {
       "name": "brujula",
       "source": "./plugin",
-      "description": "Tarjetas bien definidas desde Azure Boards, preguntas sobre la documentación con citas, revisión de PR.",
+      "description": "Tarjetas bien definidas desde Azure Boards y revisión de PR.",
       "category": "workflow",
       "tags": ["azure-devops", "mcp", "backlog"]
     }
