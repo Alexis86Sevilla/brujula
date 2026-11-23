@@ -1,9 +1,10 @@
 # PR review job. The pipeline file only `extends:` this template, read from main (resource
-# `trusted`). Protect the variable group with an "Approvals and checks > Required template" check on
-# THIS file at refs/heads/main: a PR that edits pipelines/pr-review.yml to run its own steps then
-# never receives CLAUDE_CODE_OAUTH_TOKEN.
+# `trusted`). Its secret lives in its own variable group, brujula-claude-review, protected with an
+# "Approvals and checks > Required template" check on THIS file at refs/heads/main: a PR that edits
+# pipelines/pr-review.yml to run its own steps then never receives CLAUDE_CODE_OAUTH_TOKEN.
+# (smoke and weekly use brujula-claude: they never run PR code, so they do not need the check.)
 variables:
-  - group: brujula-claude
+  - group: brujula-claude-review
   - name: MAX_TURNS
     value: "6"
   - name: MAX_BUDGET_USD
