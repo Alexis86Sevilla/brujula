@@ -68,5 +68,5 @@ jobs:
         condition: always()
         inputs:
           targetPath: $(Build.ArtifactStagingDirectory)/review
-          artifact: review
+          artifact: review-attempt-$(System.JobAttempt) # a rerun of the job must not collide
         displayName: Keep the review as an artifact
