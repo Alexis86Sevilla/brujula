@@ -114,6 +114,13 @@ describe("plugin components", () => {
     }
   });
 
+  it("skills refer to other skills with the plugin prefix (/brujula:<skill>)", () => {
+    const bare = new RegExp(`(^|[^a-z:_{}/.-])/(${SKILLS.join("|")})\\b`);
+    for (const file of textFiles(join(plugin, "skills")).filter((f) => f.endsWith(".md"))) {
+      expect(readFileSync(file, "utf8"), `${file}: use /brujula:<skill>`).not.toMatch(bare);
+    }
+  });
+
   it("no skill points back at the project's .claude/ folder", () => {
     for (const file of textFiles(join(plugin, "skills")).filter((f) => f.endsWith(".md"))) {
       const text = readFileSync(file, "utf8");

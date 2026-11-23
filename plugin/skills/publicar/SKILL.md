@@ -1,6 +1,6 @@
 ---
 name: publicar
-description: Publish the Feature and the approved cards drafted in this conversation (by the backlog skill) to Azure Boards, after validating them and getting explicit user confirmation. Use when the user runs /publicar.
+description: Publish the Feature and the approved cards drafted in this conversation (by the backlog skill) to Azure Boards, after validating them and getting explicit user confirmation. Use when the user runs /brujula:publicar.
 disable-model-invocation: true
 argument-hint: "[project]"
 ---

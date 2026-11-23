@@ -1,6 +1,6 @@
 ---
 name: tarjeta-a-boards
-description: Publish an approved card (markdown file) to Azure Boards as a Product Backlog Item, after validating it and getting explicit user confirmation. Use when the user runs /tarjeta-a-boards with a card file path.
+description: Publish an approved card (markdown file) to Azure Boards as a Product Backlog Item, after validating it and getting explicit user confirmation. Use when the user runs /brujula:tarjeta-a-boards with a card file path.
 disable-model-invocation: true
 argument-hint: "<path-to-card.md> <project>"
 ---
