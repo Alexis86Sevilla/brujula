@@ -49,7 +49,7 @@ Luego `/reload-plugins` en las sesiones abiertas. Solo llega una versión nueva 
 `version` en `plugin/.claude-plugin/plugin.json`.
 
 Este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`, por ejemplo
-`v0.2.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
+`v0.3.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
 compañero, así que solo cambian cuando alguien publica una etiqueta nueva y actualiza ese `ref`.
 
 ## Primeros pasos
