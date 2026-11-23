@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { bash, runHook } from "./helpers.js";
 
 function decision(command: string): string | undefined {
@@ -36,6 +39,58 @@ describe("guard-bash hook", () => {
     "curl -s https://example.com/data.json -o data.json",
   ])("lets through: %s", (cmd) => {
     expect(decision(cmd)).toBeUndefined();
+  });
+
+  describe("push to main follows the project's pull request setting", () => {
+    const dirs: string[] = [];
+    afterEach(() => dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true })));
+    function project(config?: string): string {
+      const dir = mkdtempSync(join(tmpdir(), "brujula-guard-"));
+      dirs.push(dir);
+      if (config !== undefined) {
+        mkdirSync(join(dir, ".claude"));
+        writeFileSync(join(dir, ".claude/brujula.json"), config);
+      }
+      return dir;
+    }
+    const push = (dir: string, cmd = "git push origin main") => {
+      const r = runHook("guard-bash.sh", bash(cmd), { CLAUDE_PROJECT_DIR: dir });
+      return r.stdout.trim() ? JSON.parse(r.stdout).hookSpecificOutput : undefined;
+    };
+
+    it("lets the push through when the project does not use pull requests", () => {
+      expect(push(project('{ "pullRequests": false }'))).toBeUndefined();
+      expect(push(project('{ "pullRequests": false }'), "git push origin master")).toBeUndefined();
+    });
+
+    it("denies it and asks for a pull request when the project uses them", () => {
+      const out = push(project('{ "pullRequests": true }'));
+      expect(out.permissionDecision).toBe("deny");
+      expect(out.permissionDecisionReason).toContain("open a pull request");
+    });
+
+    it("denies it and tells the model to ask the user when the setting is missing", () => {
+      const out = push(project());
+      expect(out.permissionDecision).toBe("deny");
+      expect(out.permissionDecisionReason).toContain("Ask the user once whether this project uses pull requests");
+      expect(out.permissionDecisionReason).toContain(
+        '.claude/brujula.json with {"pullRequests": true} or {"pullRequests": false}',
+      );
+    });
+
+    it("denies it when the setting is not a boolean or the file is not JSON", () => {
+      for (const bad of ['{ "pullRequests": "no" }', "not json"]) {
+        const out = push(project(bad));
+        expect(out.permissionDecision).toBe("deny");
+        expect(out.permissionDecisionReason).toContain(".claude/brujula.json is invalid");
+      }
+    });
+
+    it("still denies a force push to main without pull requests", () => {
+      expect(push(project('{ "pullRequests": false }'), "git push --force origin main").permissionDecision).toBe(
+        "deny",
+      );
+    });
   });
 
   it("returns a reason the model can act on", () => {

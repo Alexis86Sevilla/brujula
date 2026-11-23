@@ -17,7 +17,7 @@ if (!root || !data) {
 const checks = [];
 const check = (name, ok, detail, fix) => checks.push({ name, ok, detail, fix: ok ? "" : fix });
 
-// 1. Node 22 or newer (the bundled server targets node22 and uses node:sqlite).
+// 1. Node 22 or newer (the bundled server targets node22).
 const major = Number(process.versions.node.split(".")[0]);
 check("node-version", major >= 22, `node ${process.versions.node}`, "nvm install 22 && nvm alias default 22");
 
@@ -52,6 +52,27 @@ check(
       ? `installed: ${deps.join(", ")}`
       : `missing in ${data}: ${missing.join(", ")}`,
   `CLAUDE_PLUGIN_DATA="${data}" node "${join(root, "scripts/start-mcp.mjs")}" --install-only`,
+);
+
+// 4. The project says whether it uses pull requests (guard-bash.sh and pr-prep read it).
+const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+const configFile = join(projectDir, ".claude", "brujula.json");
+let usesPrs;
+try {
+  const value = JSON.parse(readFileSync(configFile, "utf8"))?.pullRequests;
+  if (typeof value === "boolean") usesPrs = value;
+} catch {
+  // missing or not JSON: reported below
+}
+check(
+  "pull-requests",
+  usesPrs !== undefined,
+  usesPrs === undefined
+    ? `not declared in ${configFile}`
+    : usesPrs
+      ? "this project uses pull requests: pushing to main is blocked"
+      : "this project does not use pull requests: pushing to main is allowed",
+  `echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
 );
 
 console.log(JSON.stringify(checks, null, 2));

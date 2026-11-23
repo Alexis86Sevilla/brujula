@@ -8,38 +8,83 @@ import { fileURLToPath } from "node:url";
 const norm = (s) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
-const REQUIRED = [
-  ["historia", "Historia"],
-  ["contexto", "Contexto"],
-  ["criterios de aceptacion", "Criterios de aceptación"],
+// [normalised heading, label, required]
+const SECTIONS = [
+  ["por que", "Por qué", true],
+  ["que cambia", "Qué cambia", true],
+  ["como", "Cómo", false],
+  ["hecho cuando", "Hecho cuando", true],
+  ["riesgo", "Riesgo", false],
+];
+const ALIASES = new Map([["riesgos", "riesgo"]]);
+// Headings of the old heavy format and where their content goes now.
+const LEGACY = new Map([
+  ["historia", ["Historia", "## Por qué"]],
+  ["contexto", ["Contexto", "## Por qué"]],
+  ["criterios de aceptacion", ["Criterios de aceptación", "## Hecho cuando"]],
+  ["definicion de hecho", ["Definición de hecho", "## Hecho cuando"]],
+  ["fuera de alcance", ["Fuera de alcance", "the footer line"]],
+  ["estimacion", ["Estimación", "the footer line"]],
+  ["dependencias", ["Dependencias", "the footer line"]],
+]);
+const FOOTER_LABELS = [
   ["fuera de alcance", "Fuera de alcance"],
-  ["definicion de hecho", "Definición de hecho"],
   ["estimacion", "Estimación"],
   ["dependencias", "Dependencias"],
-  ["riesgos", "Riesgos"],
 ];
+const FOOTER_HINT = "**Fuera de alcance:** … · **Estimación:** … · **Dependencias:** …";
 const SIZES = new Set(["xs", "s", "m", "l", "xl", "1", "2", "3", "5", "8", "13"]);
 // TODO/TBD are case-sensitive: "todo" is an everyday Spanish word.
 const PLACEHOLDER = /(<[^>\n]+>|\bTODO\b|\bTBD\b|\b[Ll][Oo][Rr][Ee][Mm]\b)/;
+const ITEM = /^([-*+]|\d+[.)])\s+\S/;
+
+/** Text without inline code, where values like `VAR=<new>` are legitimate. */
+const prose = (s) => s.replace(/`[^`\n]*`/g, "");
+
+/** Returns { out, est, dep } when the line is the footer, else null. */
+function parseFooter(line) {
+  const plain = norm(line.replace(/[*_]/g, ""));
+  const at = FOOTER_LABELS.map(([key]) => plain.indexOf(`${key}:`));
+  if (at.some((i) => i < 0) || !(at[0] < at[1] && at[1] < at[2])) return null;
+  const value = (k) => {
+    const start = at[k] + FOOTER_LABELS[k][0].length + 1;
+    const end = k < 2 ? at[k + 1] : plain.length;
+    return plain.slice(start, end).replace(/[·|]\s*$/, "").trim();
+  };
+  return [value(0), value(1), value(2)];
+}
 
 export function checkCard(markdown) {
   const errors = [];
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
 
-  // Split into H1 + H2 sections, ignoring headings inside code fences.
+  // Split into H1 + H2 sections, ignoring headings and the footer inside code fences.
   let inFence = false;
   const h1 = [];
   const sections = new Map();
+  const legacy = [];
+  let footer = null;
+  let footerLine = "";
   let current = null;
   for (const line of lines) {
-    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
-    const m = !inFence && /^(#{1,2})\s+(.+?)\s*$/.exec(line);
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = /^(#{1,2})\s+(.+?)\s*$/.exec(line);
+    const f = !m && footer === null ? parseFooter(line) : null;
     if (m && m[1] === "#") {
       h1.push(m[2]);
       current = null;
     } else if (m) {
-      current = norm(m[2]);
+      const key = norm(m[2]);
+      current = ALIASES.get(key) ?? key;
+      if (LEGACY.has(current)) legacy.push(current);
       sections.set(current, []);
+    } else if (f) {
+      footer = f;
+      footerLine = line;
     } else if (current !== null) {
       sections.get(current).push(line);
     }
@@ -49,41 +94,55 @@ export function checkCard(markdown) {
   else {
     const t = h1[0];
     if (t.length < 8 || t.length > 100) errors.push("title must be 8-100 characters");
-    if (PLACEHOLDER.test(t)) errors.push("title contains a placeholder");
+    if (PLACEHOLDER.test(prose(t))) errors.push("title contains a placeholder");
   }
 
-  for (const [key, label] of REQUIRED) {
+  for (const key of legacy) {
+    const [label, use] = LEGACY.get(key);
+    errors.push(`old-format section: ## ${label} (use ${use})`);
+  }
+
+  for (const [key, label, required] of SECTIONS) {
     const body = sections.get(key);
     if (!body) {
-      errors.push(`missing section: ## ${label}`);
+      if (required) errors.push(`missing section: ## ${label}`);
       continue;
     }
     const text = body.join("\n").trim();
     if (text === "") errors.push(`empty section: ## ${label}`);
-    else if (PLACEHOLDER.test(text)) errors.push(`placeholder left in section: ## ${label}`);
+    else if (PLACEHOLDER.test(prose(text))) errors.push(`placeholder left in section: ## ${label}`);
   }
 
-  const ac = sections.get("criterios de aceptacion");
-  if (ac) {
-    const items = ac.filter((l) => /^\s*([-*]|\d+\.)\s+/.test(l)).map(norm);
-    const gwt = items.filter(
-      (l) =>
-        (/\bdado\b/.test(l) && /\bcuando\b/.test(l) && /\bentonces\b/.test(l)) ||
-        (/\bgiven\b/.test(l) && /\bwhen\b/.test(l) && /\bthen\b/.test(l)),
-    );
-    if (gwt.length < 2) errors.push("## Criterios de aceptación needs at least 2 Dado/Cuando/Entonces scenarios (one per bullet)");
-    if (gwt.length < items.length) errors.push("every acceptance criterion must be a full Dado/Cuando/Entonces bullet");
+  const why = sections.get("por que");
+  if (why) {
+    const n = why.filter((l) => l.trim() !== "").length;
+    if (n > 4) errors.push(`## Por qué must be at most 4 lines, found ${n}`);
   }
 
-  const est = sections.get("estimacion");
-  if (est) {
-    const first = norm(est.join(" ").replace(/[*_`]/g, "")).split(/[\s:,.;()]+/).filter(Boolean);
-    if (!first.some((w) => SIZES.has(w))) errors.push("## Estimación must contain a size: XS, S, M, L, XL or 1/2/3/5/8/13");
+  const done = sections.get("hecho cuando");
+  if (done) {
+    const n = done.filter((l) => ITEM.test(l)).length;
+    if (n < 2 || n > 6) errors.push(`## Hecho cuando needs 2-6 checkable items, found ${n}`);
   }
 
-  const dod = sections.get("definicion de hecho");
-  if (dod && dod.filter((l) => /^\s*[-*]\s+(\[.\]\s+)?\S/.test(l)).length < 2)
-    errors.push("## Definición de hecho needs at least 2 checklist items");
+  const risk = sections.get("riesgo");
+  if (risk) {
+    const items = risk.filter((l) => ITEM.test(l));
+    const units = items.length > 0 ? items : [risk.join(" ")];
+    if (units.some((u) => !/\bmitigaci[oó]n\b|\bmitigation\b/i.test(u)))
+      errors.push('## Riesgo: every risk needs its mitigation ("mitigación: ...")');
+  }
+
+  if (!footer) errors.push(`missing footer line: ${FOOTER_HINT}`);
+  else {
+    FOOTER_LABELS.forEach(([, label], i) => {
+      if (footer[i] === "") errors.push(`footer: empty value for ${label}`);
+    });
+    if (PLACEHOLDER.test(prose(footerLine))) errors.push("placeholder left in footer line");
+    const words = footer[1].split(/[\s:,.;()]+/).filter(Boolean);
+    if (footer[1] !== "" && !words.some((w) => SIZES.has(w)))
+      errors.push("footer: Estimación must contain a size: XS, S, M, L, XL or 1/2/3/5/8/13");
+  }
 
   return { ok: errors.length === 0, errors };
 }

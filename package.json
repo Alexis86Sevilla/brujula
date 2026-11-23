@@ -16,24 +16,18 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "env:check": "bash scripts/env-check.sh",
     "claude-md:check": "bash scripts/check-claude-md.sh",
-    "mutation": "stryker run",
     "claude:red": "BRUJULA_GATE_OFF=1 claude",
     "claude:green": "claude --settings .claude/profiles/green.json",
     "mcp": "tsx src/mcp/main.ts",
-    "rag:index": "tsx scripts/rag-index.ts",
-    "rag:eval": "tsx scripts/rag-eval.ts",
     "build:plugin": "node scripts/build-plugin.mjs",
     "check:plugin": "npm run build:plugin && git diff --exit-code -- plugin/ && test -z \"$(git status --porcelain -- plugin/)\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/client": "^2.4.0",
-    "@stryker-mutator/core": "^10.1.1",
-    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
     "eslint": "^10.12.0",
-    "fast-check": "^4.10.2",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
@@ -43,7 +37,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
-    "gray-matter": "^4.0.3",
     "zod": "^4.6.7"
   }
 }

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -39,8 +39,21 @@ function marketplace() {
   return dir;
 }
 
-function run(root: string, data: string, url: string) {
-  const r = spawnSync(process.execPath, [doctor, root, data, url], { encoding: "utf8" });
+/** A project directory, optionally with a .claude/brujula.json. */
+function project(config?: string) {
+  const dir = mkdtempSync(join(tmpdir(), "project-"));
+  if (config !== undefined) {
+    mkdirSync(join(dir, ".claude"));
+    writeFileSync(join(dir, ".claude/brujula.json"), config);
+  }
+  return dir;
+}
+
+function run(root: string, data: string, url: string, projectDir = project('{ "pullRequests": true }')) {
+  const r = spawnSync(process.execPath, [doctor, root, data, url], {
+    encoding: "utf8",
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+  });
   return { status: r.status, checks: JSON.parse(r.stdout) as Check[] };
 }
 
@@ -75,6 +88,28 @@ describe("doctor.mjs", () => {
     const git = byName(r.checks, "marketplace-git");
     expect(git?.ok).toBe(false);
     expect(git?.fix).toContain(`GIT_TERMINAL_PROMPT=0 git ls-remote "${missing}" HEAD`);
+  });
+
+  it("reports whether the project uses pull requests and how to declare it when unset", () => {
+    const root = pluginRoot();
+    const data = mkdtempSync(join(tmpdir(), "data-"));
+    const url = marketplace();
+    const without = project('{ "pullRequests": false }');
+    expect(byName(run(root, data, url, without).checks, "pull-requests")).toMatchObject({
+      ok: true,
+      detail: "this project does not use pull requests: pushing to main is allowed",
+    });
+    const unset = project();
+    const r = run(root, data, url, unset);
+    expect(byName(r.checks, "pull-requests")).toMatchObject({
+      ok: false,
+      detail: `not declared in ${join(unset, ".claude/brujula.json")}`,
+    });
+    expect(byName(r.checks, "pull-requests")?.fix).toBe(
+      `echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
+    );
+    expect(r.status).not.toBe(0);
+    for (const d of [root, data, url, without, unset]) rmSync(d, { recursive: true, force: true });
   });
 
   it("checks the Node version", () => {

@@ -3,15 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
-import { createServer, stubSearch, type SearchFn } from "../src/mcp/server.js";
+import { createServer } from "../src/mcp/server.js";
 
 let root: string;
 let client: Client;
 let server: ReturnType<typeof createServer>;
 
-async function connect(search: SearchFn = stubSearch) {
+async function connect() {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  server = createServer({ root, search });
+  server = createServer({ root });
   await server.connect(serverTransport);
   client = new Client({ name: "test-harness", version: "1.0.0" });
   await client.connect(clientTransport);
@@ -32,15 +32,10 @@ afterEach(async () => {
 });
 
 describe("tools", () => {
-  it("lists the four tools", async () => {
+  it("lists the three tools", async () => {
     await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual([
-      "brujula_adr_create",
-      "brujula_card_lint",
-      "brujula_conventions",
-      "brujula_search_docs",
-    ]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["brujula_adr_create", "brujula_card_lint", "brujula_conventions"]);
   });
 
   it("brujula_conventions lists topics and serves one", async () => {
@@ -85,42 +80,16 @@ describe("tools", () => {
     const r = await client.callTool({ name: "brujula_adr_create", arguments: { title: "x" } });
     expect(r.isError).toBe(true);
   });
-
-  it("brujula_search_docs reports the stub honestly", async () => {
-    await connect();
-    const r = await client.callTool({ name: "brujula_search_docs", arguments: { query: "deploy process" } });
-    expect(r.isError).toBe(true);
-    expect(firstText(r)).toContain("module 7");
-  });
-
-  it("brujula_search_docs formats hits with source and lines", async () => {
-    await connect(async () => [
-      {
-        source: "wiki/deploy.md",
-        heading: "Rollback",
-        startLine: 10,
-        endLine: 22,
-        score: 0.5,
-        text: "Run the rollback job.",
-      },
-    ]);
-    const r = await client.callTool({ name: "brujula_search_docs", arguments: { query: "rollback" } });
-    expect(firstText(r)).toContain("wiki/deploy.md:10-22 (Rollback)");
-  });
 });
 
 describe("brujula_card_lint", () => {
   const lint = (markdown: string) => client.callTool({ name: "brujula_card_lint", arguments: { markdown } });
   const complete = [
     "# Los usuarios restablecen su contraseña",
-    "## Historia\nComo usuario quiero restablecer mi contraseña.",
-    "## Contexto\nHoy hay que pedirlo a soporte.",
-    "## Criterios de aceptación\n- **Dado** un usuario, **cuando** pide el enlace, **entonces** recibe un correo.",
-    "## Fuera de alcance\n- Doble factor.",
-    "## Definición de hecho\n- [ ] Tests",
-    "## Estimación\nS",
-    "## Dependencias\n- Ninguna.",
-    "## Riesgos\n- Correos en spam.",
+    "## Por qué\nHoy hay que pedirlo a soporte.",
+    "## Qué cambia\nUn enlace en el login.",
+    "## Hecho cuando\n- **Dado** un usuario, **cuando** pide el enlace, **entonces** recibe un correo.\n- [ ] El enlace caduca en 1 h.",
+    "**Fuera de alcance:** doble factor · **Estimación:** S · **Dependencias:** ninguna",
   ].join("\n\n");
 
   it("is advertised as read-only with an output schema", async () => {
@@ -131,28 +100,35 @@ describe("brujula_card_lint", () => {
     expect(tool?.outputSchema).toBeDefined();
   });
 
-  it("reports every section missing for an empty card", async () => {
+  it("reports every required section missing for an empty card", async () => {
     await connect();
     const r = await lint("");
     expect(r.isError).toBeFalsy();
-    expect(r.structuredContent).toMatchObject({ ok: false, gwt: false });
-    expect((r.structuredContent as { missing: string[] }).missing).toHaveLength(9);
+    expect(r.structuredContent).toMatchObject({ ok: false, criteria: false });
+    expect((r.structuredContent as { missing: string[] }).missing).toHaveLength(5);
     expect(firstText(r)).toContain("NOT ready");
   });
 
   it("accepts a complete Spanish card", async () => {
     await connect();
     const r = await lint(complete);
-    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], gwt: true });
+    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true });
   });
 
   it("flags headings with empty bodies", async () => {
     await connect();
-    const r = await lint("# Titulo valido de tarjeta\n\n## Historia\n\n## Contexto\n  \n");
+    const r = await lint("# Titulo valido de tarjeta\n\n## Por qué\n\n## Qué cambia\n  \n");
     const sc = r.structuredContent as { ok: boolean; empty: string[]; missing: string[] };
     expect(sc.ok).toBe(false);
-    expect(sc.empty).toEqual(["story", "context"]);
-    expect(sc.missing).toContain("risks");
+    expect(sc.empty).toEqual(["why", "what-changes"]);
+    expect(sc.missing).toContain("footer");
+  });
+
+  it("names old heavy-format headings in the summary", async () => {
+    await connect();
+    const r = await lint(`${complete}\n\n## Historia\nComo usuario quiero algo.`);
+    expect(r.structuredContent).toMatchObject({ ok: false, legacy: ["story"] });
+    expect(firstText(r)).toContain("Old-format sections to merge into the new ones: story.");
   });
 
   it("returns a guided isError (no exception) for a 1 MB input", async () => {

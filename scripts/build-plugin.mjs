@@ -4,7 +4,7 @@ import { build } from "esbuild";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 // Packages with native binaries: installed at first run by the launcher, never bundled.
-// Brujula's search runs on node:sqlite (built into Node 22), so this list is empty today.
+// None today.
 const NATIVE = [];
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));

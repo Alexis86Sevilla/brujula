@@ -64,8 +64,7 @@
       "mcp__plugin_brujula_ado__wit_query",
       "mcp__plugin_brujula_ado__wit_work_item",
       "mcp__plugin_brujula_ado__work",
-      "mcp__plugin_brujula_brujula__brujula_conventions",
-      "mcp__plugin_brujula_brujula__brujula_search_docs"
+      "mcp__plugin_brujula_brujula__brujula_conventions"
     ]
   },
   "sandbox": {
@@ -100,7 +99,7 @@
       "source": {
         "source": "git",
         "url": "https://github.com/Alexis86Sevilla/brujula.git",
-        "ref": "v0.2.0"
+        "ref": "v0.3.0"
       }
     }
   },

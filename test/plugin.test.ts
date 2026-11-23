@@ -25,7 +25,6 @@ const SKILLS = [
   "doctor",
   "explica-modulo",
   "pr-prep",
-  "pregunta-wiki",
   "publicar",
   "sprint-sync",
   "tareas",

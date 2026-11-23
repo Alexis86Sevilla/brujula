@@ -1,13 +1,15 @@
-import { CARD_SECTIONS } from "./standard.js";
+import { CARD_SECTIONS, LEGACY_SECTIONS } from "./standard.js";
 
 export interface LintResult {
   ok: boolean;
-  /** Ids (from CARD_SECTIONS) of sections with no heading. */
+  /** Ids (from CARD_SECTIONS) of required sections with no heading (or no footer line). */
   missing: string[];
   /** Ids of sections whose heading exists but whose body has no content. */
   empty: string[];
-  /** True when the acceptance criteria have at least one full Given/When/Then (or Dado/Cuando/Entonces) criterion. */
-  gwt: boolean;
+  /** Ids (from LEGACY_SECTIONS) of old heavy-format headings found in the card. */
+  legacy: string[];
+  /** True when "Hecho cuando" has 2-6 list items. */
+  criteria: boolean;
 }
 
 const normalise = (s: string): string =>
@@ -21,39 +23,32 @@ const normalise = (s: string): string =>
 const ID_BY_HEADING = new Map<string, string>(
   CARD_SECTIONS.flatMap((s) => [s.name, ...s.aliases].map((h) => [normalise(h), s.id] as const)),
 );
+const LEGACY_BY_HEADING = new Map<string, string>(
+  [...LEGACY_SECTIONS].flatMap(([id, headings]) => headings.map((h) => [normalise(h), id] as const)),
+);
 
-const GWT_SETS = [
-  [/\bgiven\b/, /\bwhen\b/, /\bthen\b/],
-  [/\bdado\b/, /\bcuando\b/, /\bentonces\b/],
-];
-
-/** Splits criteria into list items (with continuation lines) or paragraphs. */
-function criteria(body: string[]): string[] {
-  const items: string[] = [];
-  let open = false; // true while continuation lines may extend the last item
-  for (const line of body) {
-    if (line.trim() === "") {
-      open = false;
-    } else if (open && !/^\s*([-*+]|\d+[.)])\s+/.test(line)) {
-      items[items.length - 1] += ` ${line}`;
-    } else {
-      items.push(line);
-      open = true;
-    }
-  }
-  return items;
+/** True when the line is the footer: "Fuera de alcance: … · Estimación: … · Dependencias: …". */
+function isFooter(line: string): boolean {
+  const plain = normalise(line.replace(/[*_]/g, ""));
+  const at = ["fuera de alcance:", "estimacion:", "dependencias:"].map((k) => plain.indexOf(k));
+  return at.every((i) => i >= 0) && at[0]! < at[1]! && at[1]! < at[2]!;
 }
 
-/** Pure card linter: checks structure only (sections present, non-empty, Given/When/Then). */
+/** Pure card linter: checks structure only (required sections present and filled, 2-6 criteria). */
 export function lintCard(markdown: string): LintResult {
   const bodies = new Map<string, string[]>();
+  const legacy: string[] = [];
   let inFence = false;
   let current: string[] | null = null;
   let seenH1 = false;
 
   for (const line of markdown.replace(/\r\n?/g, "\n").split("\n")) {
-    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
-    const m = inFence ? null : /^(#{1,2})\s+(.*?)\s*#*\s*$/.exec(line);
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = /^(#{1,2})\s+(.*?)\s*#*\s*$/.exec(line);
     if (m?.[1] === "#") {
       current = null;
       if (!seenH1) {
@@ -61,13 +56,18 @@ export function lintCard(markdown: string): LintResult {
         bodies.set("title", [m[2] ?? ""]);
       }
     } else if (m) {
-      const id = ID_BY_HEADING.get(normalise(m[2] ?? ""));
-      if (id && id !== "title" && !bodies.has(id)) {
+      const heading = normalise(m[2] ?? "");
+      const id = ID_BY_HEADING.get(heading);
+      const old = LEGACY_BY_HEADING.get(heading);
+      if (old && !legacy.includes(old)) legacy.push(old);
+      if (id && id !== "title" && id !== "footer" && !bodies.has(id)) {
         current = [];
         bodies.set(id, current);
       } else {
         current = null;
       }
+    } else if (!bodies.has("footer") && isFooter(line)) {
+      bodies.set("footer", [line]);
     } else if (current) {
       current.push(line);
     }
@@ -77,20 +77,20 @@ export function lintCard(markdown: string): LintResult {
   const empty: string[] = [];
   for (const s of CARD_SECTIONS) {
     const body = bodies.get(s.id);
-    if (!body) missing.push(s.id);
-    else if (body.join("\n").trim() === "") empty.push(s.id);
+    if (!body) {
+      if (s.required) missing.push(s.id);
+    } else if (body.join("\n").trim() === "") empty.push(s.id);
   }
 
-  let gwt = true;
-  const ac = bodies.get("acceptance-criteria");
-  if (ac) {
-    gwt = criteria(ac).some((c) => {
-      const lower = c.toLowerCase();
-      return GWT_SETS.some((set) => set.every((re) => re.test(lower)));
-    });
-  }
-  // Missing or empty criteria cannot satisfy Given/When/Then.
-  if (!ac || ac.join("").trim() === "") gwt = false;
+  const done = bodies.get("done-when") ?? [];
+  const items = done.filter((l) => /^([-*+]|\d+[.)])\s+\S/.test(l)).length;
+  const criteria = items >= 2 && items <= 6;
 
-  return { ok: missing.length === 0 && empty.length === 0 && gwt, missing, empty, gwt };
+  return {
+    ok: missing.length === 0 && empty.length === 0 && legacy.length === 0 && criteria,
+    missing,
+    empty,
+    legacy,
+    criteria,
+  };
 }

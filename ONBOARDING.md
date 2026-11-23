@@ -35,8 +35,8 @@ Ejecuta `/mcp`: `plugin:brujula:brujula` y `plugin:brujula:ado` deben aparecer c
 En una sesión de `claude`:
 
 - `/plugin` lista `brujula@brujula-equipo` como habilitado.
-- `/brujula:` muestra las skills (backlog, doctor, explica-modulo, pr-prep, pregunta-wiki,
-  publicar, sprint-sync, tareas, tarjeta, tarjeta-a-boards).
+- `/brujula:` muestra las skills (backlog, doctor, explica-modulo, pr-prep, publicar,
+  sprint-sync, tareas, tarjeta, tarjeta-a-boards).
 - Pregunta: "Usa brujula_conventions y dime qué reglas devuelve". Debe llamar a la herramienta.
 - `/brujula:doctor` termina con todas las comprobaciones en verde.
 
@@ -49,17 +49,21 @@ Luego `/reload-plugins` en las sesiones abiertas. Solo llega una versión nueva 
 `version` en `plugin/.claude-plugin/plugin.json`.
 
 Este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`, por ejemplo
-`v0.2.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
+`v0.3.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
 compañero, así que solo cambian cuando alguien publica una etiqueta nueva y actualiza ese `ref`.
 
 ## Primeros pasos
 
 1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
-2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `/audit-cards`.
+2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `bash scripts/card-lint.sh`.
 
 ## Consejos
 
 - Tras instalar o actualizar el plugin, ejecuta `/reload-plugins` o abre un `claude` nuevo (no `--resume`).
+- Cada proyecto declara si usa pull requests en `.claude/brujula.json` (`{ "pullRequests": true }`
+  o `false`), versionado en el repo. Con `true` el plugin bloquea el push directo a `main` y
+  `/brujula:pr-prep` redacta la descripción de la PR; con `false` permite el push y propone el
+  merge local. Si falta, Claude te lo pregunta la primera vez y `/brujula:doctor` lo avisa.
 - Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Los bloqueos de `.env` y de
   secretos siguen activos.
 - Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.
