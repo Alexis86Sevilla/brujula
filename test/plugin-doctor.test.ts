@@ -106,7 +106,7 @@ describe("doctor.mjs", () => {
       detail: `not declared in ${join(unset, ".claude/brujula.json")}`,
     });
     expect(byName(r.checks, "pull-requests")?.fix).toBe(
-      `echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
+      `mkdir -p .claude && echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
     );
     expect(r.status).not.toBe(0);
     for (const d of [root, data, url, without, unset]) rmSync(d, { recursive: true, force: true });

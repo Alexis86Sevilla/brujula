@@ -19,7 +19,9 @@ case "$name" in
     [ -x "$proj/node_modules/.bin/prettier" ] || exit 0 ;;
   quality-gate.sh)
     if [ -z "${BRUJULA_TYPECHECK_CMD:-}${BRUJULA_TEST_CMD:-}" ]; then
-      [ -f "$proj/package.json" ] && [ -x "$proj/node_modules/.bin/tsc" ] && [ -x "$proj/node_modules/.bin/vitest" ] || exit 0
+      # Without a root tsconfig.json (a monorepo, say) tsc prints its usage and fails every turn.
+      [ -f "$proj/package.json" ] && [ -f "$proj/tsconfig.json" ] && [ -x "$proj/node_modules/.bin/tsc" ] \
+        && [ -x "$proj/node_modules/.bin/vitest" ] || exit 0
     fi ;;
 esac
 

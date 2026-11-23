@@ -72,7 +72,7 @@ check(
     : usesPrs
       ? "this project uses pull requests: pushing to main is blocked"
       : "this project does not use pull requests: pushing to main is allowed",
-  `echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
+  `mkdir -p .claude && echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
 );
 
 console.log(JSON.stringify(checks, null, 2));

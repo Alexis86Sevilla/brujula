@@ -5,7 +5,6 @@ docs/
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
-pipelines/
 .atl/
 plugin/dist/
 plugin/runtime/

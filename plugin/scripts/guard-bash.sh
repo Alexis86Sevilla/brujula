@@ -17,12 +17,16 @@ check() {   # check <extended-regex> <reason>
   if [[ $cmd =~ $1 ]]; then deny "$2"; fi
 }
 
-check '(^|[^[:alnum:]_.-])rm[[:space:]]+(-[[:alnum:]]*[rR]|--recursive)' \
-  "Recursive rm is blocked. Delete specific files, or ask the user to run it."
-check 'git[[:space:]]+push[^;&|]*[[:space:]](-f|--force)([[:space:]]|$)' \
+# `git rm -r` removes tracked files that git can restore: only plain rm counts here.
+if [[ ${cmd//git rm/git-rm} =~ (^|[^[:alnum:]_.-])rm([[:space:]]+-[^[:space:]]*)*[[:space:]]+(-[[:alnum:]]*[rR]|--recursive) ]]; then
+  deny "Recursive rm is blocked. Delete specific files, or ask the user to run it."
+fi
+git_push='git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push[^;&|]*'
+check "${git_push}"'[[:space:]](-f|--force|["'\'']?\+[^[:space:]]+)([[:space:]]|$)' \
   "Force push is blocked. Use --force-with-lease only after asking the user."
 # Pushing to main depends on the project: some teams use pull requests, others do not.
-push_main='git[[:space:]]+push[^;&|]*[[:space:]](main|master)([[:space:]]|$)'
+# The destination is main when the last refspec part is main: "main", "HEAD:main", "x:refs/heads/main".
+push_main="${git_push}"'[[:space:]:+"'\''](refs/heads/)?(main|master)([[:space:]"'\'']|$)'
 if [[ $cmd =~ $push_main ]]; then
   # shellcheck source=lib/project-config.sh
   source "$(dirname "$0")/lib/project-config.sh"
@@ -35,8 +39,14 @@ if [[ $cmd =~ $push_main ]]; then
 fi
 check 'git[[:space:]]+reset[[:space:]]+--hard' \
   "git reset --hard discards work. Use git stash or ask the user."
-check 'git[[:space:]]+commit[^;&|]*--no-verify' \
-  "Skipping commit hooks is blocked. Fix the failing check instead."
+nl=$'\n'
+if [[ $cmd =~ git[[:space:]]+commit([^;&|$nl]*) ]]; then
+  args="${BASH_REMATCH[1]}"
+  args="$(printf '%s' "$args" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g")"
+  if [[ " $args " =~ [[:space:]](--no-verify|-[apsvqeio]*n[apsvqeio]*m?)[[:space:]] ]]; then
+    deny "Skipping commit hooks (-n or --no-verify) is blocked. Fix the failing check instead."
+  fi
+fi
 check '(curl|wget)[^|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z)?sh' \
   "Piping a download into a shell is blocked. Download, read it, then ask the user."
 check 'chmod[[:space:]]+(-R[[:space:]]+)?777' \

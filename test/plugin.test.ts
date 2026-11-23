@@ -1,6 +1,15 @@
 // test/plugin.test.ts
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -189,6 +198,42 @@ describe("plugin hooks", () => {
       });
       expect(r, script).toMatchObject({ status: 0, stdout: "", stderr: "" });
     }
+  });
+});
+
+describe("quality-gate in a Node project", () => {
+  // A project with package.json, tsc and vitest, whose tsc fails the way it does without a tsconfig.json.
+  function nodeProject(withTsconfig: boolean): string {
+    const project = mkdtempSync(join(tmpdir(), "node-proj-"));
+    writeFileSync(join(project, "package.json"), "{}");
+    mkdirSync(join(project, "node_modules/.bin"), { recursive: true });
+    for (const bin of ["tsc", "vitest"]) {
+      writeFileSync(join(project, "node_modules/.bin", bin), "#!/bin/sh\necho 'error TS5058'\nexit 1\n", {
+        mode: 0o755,
+      });
+    }
+    if (withTsconfig) writeFileSync(join(project, "tsconfig.json"), "{}");
+    return project;
+  }
+  const gate = (project: string) =>
+    spawnSync(join(plugin, "scripts/run-hook.sh"), ["quality-gate.sh"], {
+      input: JSON.stringify({ hook_event_name: "Stop" }),
+      encoding: "utf8",
+      env: { ...process.env, CLAUDE_PROJECT_DIR: project, BRUJULA_GATE_FORCE: "1" },
+    });
+
+  it("does not run where the project has no root tsconfig.json (a monorepo, say)", () => {
+    const project = nodeProject(false);
+    expect(gate(project)).toMatchObject({ status: 0, stderr: "" });
+    rmSync(project, { recursive: true, force: true });
+  });
+
+  it("still blocks the turn where the project has a tsconfig.json and the typecheck fails", () => {
+    const project = nodeProject(true);
+    const r = gate(project);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain("Typecheck fails");
+    rmSync(project, { recursive: true, force: true });
   });
 });
 

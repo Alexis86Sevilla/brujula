@@ -1,6 +1,6 @@
 ---
 name: verificador
-description: Independent verifier. Checks a branch diff against the acceptance criteria of a work item card and runs the project checks. Use after an implementation is finished, before a PR. Give it only the card path and the base ref, never a summary of what was done.
+description: Independent verifier. Checks a branch diff against the acceptance criteria of a work item card and runs the project checks. Use after an implementation is finished, before pushing it to main or opening a pull request. Give it only the card path and the base ref, never a summary of what was done.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 maxTurns: 25
