@@ -10,11 +10,11 @@ variables:
   - name: MAX_BUDGET_USD
     value: "0.50"
 
-pool:
-  vmImage: ubuntu-24.04
-
 jobs:
   - job: review
+    # pool goes inside the job: an `extends:` template does not accept a top-level pool.
+    pool:
+      vmImage: ubuntu-24.04
     timeoutInMinutes: 15
     # Skip forks: their content must never run next to our secrets.
     condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
