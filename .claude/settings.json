@@ -64,8 +64,7 @@
       "mcp__plugin_brujula_ado__wit_query",
       "mcp__plugin_brujula_ado__wit_work_item",
       "mcp__plugin_brujula_ado__work",
-      "mcp__plugin_brujula_brujula__brujula_conventions",
-      "mcp__plugin_brujula_brujula__brujula_search_docs"
+      "mcp__plugin_brujula_brujula__brujula_conventions"
     ]
   },
   "sandbox": {

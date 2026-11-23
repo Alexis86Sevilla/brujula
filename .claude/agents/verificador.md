@@ -24,8 +24,9 @@ the repository only.
 
 ## Procedure
 
-1. Read the card. List every acceptance criterion (Given/When/Then) with a number. If there are
-   none, stop and answer `INCONCLUSIVE: the card has no acceptance criteria`.
+1. Read the card. List every acceptance criterion with a number: the items of `## Hecho cuando`
+   (Given/When/Then or a verifiable check; older cards use `## Criterios de aceptación`). If there
+   are none, stop and answer `INCONCLUSIVE: the card has no acceptance criteria`.
 2. Get the change: `git diff <base>...HEAD` and `git log --oneline <base>..HEAD`. Read the changed
    files in full, not only the hunks.
 3. Run `npm run typecheck`, `npm run lint` and `npm test`. Report each result exactly; never hide a failure.
