@@ -34,4 +34,8 @@ and continue with the answer.
    `git switch <base> && git merge --no-ff <branch> -m "merge: <subject>"` and then
    `git push origin <base>`, with `<base>` without the `origin/` prefix, and put the
    `Work item: #<id>` line in the commit body.
+   When the branch above is the base itself (`branch: main` and `base: origin/main`, for example):
+   without pull requests there is nothing to merge, so propose only the commit and
+   `git push origin <base>`; with pull requests, propose first moving the work to a new branch
+   (`git switch -c <type>/<id>-<slug>`), because the push to the base is blocked.
 4. Do not run `git commit`, `git merge` or `git push`. End by asking which proposal I want to use.

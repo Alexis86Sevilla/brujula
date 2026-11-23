@@ -33,14 +33,16 @@ echo "work-item: $work_item"
 echo "pull-requests: $pull_requests"
 echo
 echo "## status"
-git status --short | head -30
+# No "| head" under pipefail: git would die of SIGPIPE (141) and stop the script.
+status="$(git status --short)"
+printf '%s\n' "${status}" | sed -n '1,30p'
 echo
 echo "## staged diff stat"
 git diff --cached --stat | tail -15
 echo
 if [ -n "$base" ] && [ "$branch" != "${base#origin/}" ]; then
   echo "## commits on this branch ($base..HEAD)"
-  git log --oneline "$base..HEAD" | head -30
+  git log -n 30 --oneline "$base..HEAD"
   echo
   echo "## branch diff stat ($base...HEAD)"
   git diff --stat "$base...HEAD" | tail -30

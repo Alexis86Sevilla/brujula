@@ -50,6 +50,16 @@ describe("pr-prep context.sh", () => {
     expect(run()).toContain("pull-requests: invalid");
   });
 
+  it("prints every section even when git status and the log are longer than a pipe buffer", () => {
+    git("switch", "-qc", "feature/77-many");
+    for (let i = 0; i < 40; i++) git("commit", "-q", "--allow-empty", "-m", `chore: step ${i} ${"x".repeat(60)}`);
+    mkdirSync(join(repo, "untracked"));
+    for (let i = 0; i < 2500; i++) writeFileSync(join(repo, "untracked", `file-${i}-${"y".repeat(40)}.txt`), "");
+    const out = run();
+    expect(out).toContain("## branch diff stat");
+    expect(out.match(/chore: step/g)).toHaveLength(30);
+  });
+
   it("reports work-item none and still works on the base branch", () => {
     const out = run();
     expect(out).toContain("work-item: none");
