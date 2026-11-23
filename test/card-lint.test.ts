@@ -1,9 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error -- plain .mjs script of the tarjeta skill, no type declarations
 import { checkCard } from "../plugin/skills/tarjeta/scripts/check-card.mjs";
 import { lintCard } from "../src/mcp/card-lint.js";
-import { CARD_SECTIONS, CARD_STANDARD } from "../src/mcp/standard.js";
+import { CARD_SECTIONS, CARD_STANDARD, LEGACY_SECTIONS } from "../src/mcp/standard.js";
 
 const EXPECTED_STANDARD = `# Work item quality standard
 
@@ -53,7 +52,7 @@ describe("CARD_STANDARD", () => {
 
 describe("lintCard", () => {
   it("accepts a complete Spanish card", () => {
-    expect(lintCard(complete)).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true });
+    expect(lintCard(complete)).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true, errors: [] });
   });
 
   it("reports every required section missing for an empty card", () => {
@@ -113,8 +112,45 @@ describe("the two validators agree", () => {
     bad: readFileSync("test/fixtures/cards/bad.md", "utf8"),
   };
   it.each(Object.entries(cards))("%s gets the same verdict from check-card.mjs and lintCard", (name, md) => {
-    const skill = (checkCard as (m: string) => { ok: boolean })(md).ok;
+    const skill = checkCard(md).ok;
     expect(lintCard(md).ok).toBe(skill);
     expect(skill).toBe(name !== "bad");
+  });
+
+  const heading = (from: string, to: string) => complete.replace(`## ${from}\n`, `## ${to}\n`);
+  const cases: [string, string, boolean][] = [
+    [
+      "English headings",
+      heading("Por qué", "Why").replace("## Qué cambia", "## What changes").replace("## Hecho cuando", "## Done when"),
+      true,
+    ],
+    ["trailing colon and hashes", heading("Por qué", "Por qué:").replace("## Qué cambia", "## Qué cambia ##"), true],
+    ["a risk without mitigation", `${complete}\n## Riesgo\n- Puede fallar el correo.\n`, false],
+    ["a risk with mitigation", `${complete}\n## Riesgo\n- Puede fallar el correo. Mitigación: reintento.\n`, true],
+    ["an estimate without size", complete.replace("**Estimación:** S", "**Estimación:** pendiente"), false],
+    ["a placeholder", complete.replace("Un enlace", "Un <enlace>"), false],
+    ["a repeated section", `${complete}\n## Por qué\nOtra razón.\n`, false],
+    ["no H1 title", complete.replace(/^# .*\n/, ""), false],
+  ];
+  it.each(cases)("%s: same verdict from both", (_name, md, expected) => {
+    expect(checkCard(md).ok).toBe(expected);
+    expect(lintCard(md).ok).toBe(expected);
+  });
+
+  const aliases = CARD_SECTIONS.filter((s) => !["title", "footer"].includes(s.id)).flatMap((s) =>
+    s.aliases.map((a) => [s.name, a] as const),
+  );
+  it.each(aliases)("check-card.mjs accepts %s written as '%s'", (name, alias) => {
+    const md = complete.includes(`## ${name}\n`)
+      ? heading(name, alias)
+      : `${complete}\n## ${alias}\n- Paso uno. Mitigación: ninguna necesaria.\n`;
+    expect(checkCard(md)).toEqual({ ok: true, errors: [] });
+  });
+
+  const legacy = [...LEGACY_SECTIONS.values()].flat();
+  it.each(legacy)("both reject the old heading '%s'", (old) => {
+    const md = `${complete}\n## ${old}\nTexto.\n`;
+    expect(checkCard(md).ok).toBe(false);
+    expect(lintCard(md).ok).toBe(false);
   });
 });

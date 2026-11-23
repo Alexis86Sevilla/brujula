@@ -5763,15 +5763,15 @@ var initializer2 = (inst, issues) => {
   if (_installedErrorProtos.has(proto))
     return;
   _installedErrorProtos.add(proto);
-  _lazyMethod(proto, "format", (self) => (mapper) => formatError(self, mapper));
-  _lazyMethod(proto, "flatten", (self) => (mapper) => flattenError(self, mapper));
-  _lazyMethod(proto, "addIssue", (self) => (issue2) => {
-    self.issues.push(issue2);
-    self.message = JSON.stringify(self.issues, jsonStringifyReplacer, 2);
+  _lazyMethod(proto, "format", (self2) => (mapper) => formatError(self2, mapper));
+  _lazyMethod(proto, "flatten", (self2) => (mapper) => flattenError(self2, mapper));
+  _lazyMethod(proto, "addIssue", (self2) => (issue2) => {
+    self2.issues.push(issue2);
+    self2.message = JSON.stringify(self2.issues, jsonStringifyReplacer, 2);
   });
-  _lazyMethod(proto, "addIssues", (self) => (issues2) => {
-    self.issues.push(...issues2);
-    self.message = JSON.stringify(self.issues, jsonStringifyReplacer, 2);
+  _lazyMethod(proto, "addIssues", (self2) => (issues2) => {
+    self2.issues.push(...issues2);
+    self2.message = JSON.stringify(self2.issues, jsonStringifyReplacer, 2);
   });
   Object.defineProperty(proto, "isEmpty", {
     configurable: true,
@@ -6448,7 +6448,7 @@ var ZodObject = /* @__PURE__ */ $constructor("ZodObject", (inst, def) => {
   $ZodObjectJIT.init(inst, def);
   ZodType.init(inst, def);
   inst._zod.processJSONSchema = (ctx, json, params) => objectProcessor(inst, ctx, json, params);
-  util_exports.installLazyProp(inst, "shape", (self) => self._zod.def.shape, false);
+  util_exports.installLazyProp(inst, "shape", (self2) => self2._zod.def.shape, false);
 }, {
   keyof() {
     return _enum(Object.keys(this._zod.def.shape));
@@ -13684,10 +13684,10 @@ var require_util = /* @__PURE__ */ __commonJSMin(((exports) => {
   }
   exports.alwaysValidSchema = alwaysValidSchema;
   function checkUnknownRules(it, schema = it.schema) {
-    const { opts, self } = it;
+    const { opts, self: self2 } = it;
     if (!opts.strictSchema) return;
     if (typeof schema === "boolean") return;
-    const rules = self.RULES.keywords;
+    const rules = self2.RULES.keywords;
     for (const key in schema) if (!rules[key]) checkStrictMode(it, `unknown keyword: "${key}"`);
   }
   exports.checkUnknownRules = checkUnknownRules;
@@ -14019,8 +14019,8 @@ var require_rules = /* @__PURE__ */ __commonJSMin(((exports) => {
 var require_applicability = /* @__PURE__ */ __commonJSMin(((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = void 0;
-  function schemaHasRulesForType({ schema, self }, type) {
-    const group = self.RULES.types[type];
+  function schemaHasRulesForType({ schema, self: self2 }, type) {
+    const group = self2.RULES.types[type];
     return group && group !== true && shouldUseGroup(schema, group);
   }
   exports.schemaHasRulesForType = schemaHasRulesForType;
@@ -14433,14 +14433,14 @@ var require_keyword = /* @__PURE__ */ __commonJSMin(((exports) => {
     return !schemaType.length || schemaType.some((st) => st === "array" ? Array.isArray(schema) : st === "object" ? schema && typeof schema == "object" && !Array.isArray(schema) : typeof schema == st || allowUndefined && typeof schema == "undefined");
   }
   exports.validSchemaType = validSchemaType;
-  function validateKeywordUsage({ schema, opts, self, errSchemaPath }, def, keyword) {
+  function validateKeywordUsage({ schema, opts, self: self2, errSchemaPath }, def, keyword) {
     if (Array.isArray(def.keyword) ? !def.keyword.includes(keyword) : def.keyword !== keyword) throw new Error("ajv implementation error");
     const deps = def.dependencies;
     if (deps === null || deps === void 0 ? void 0 : deps.some((kwd) => !Object.prototype.hasOwnProperty.call(schema, kwd))) throw new Error(`parent schema must have dependencies of ${keyword}: ${deps.join(",")}`);
     if (def.validateSchema) {
       if (!def.validateSchema(schema[keyword])) {
-        const msg = `keyword "${keyword}" value is invalid at path "${errSchemaPath}": ` + self.errorsText(def.validateSchema.errors);
-        if (opts.validateSchema === "log") self.logger.error(msg);
+        const msg = `keyword "${keyword}" value is invalid at path "${errSchemaPath}": ` + self2.errorsText(def.validateSchema.errors);
+        if (opts.validateSchema === "log") self2.logger.error(msg);
         else throw new Error(msg);
       }
     }
@@ -14824,9 +14824,9 @@ var require_validate = /* @__PURE__ */ __commonJSMin(((exports) => {
     }
     (0, boolSchema_1.boolOrEmptySchema)(it, valid);
   }
-  function schemaCxtHasRules({ schema, self }) {
+  function schemaCxtHasRules({ schema, self: self2 }) {
     if (typeof schema == "boolean") return !schema;
-    for (const key in schema) if (self.RULES.all[key]) return true;
+    for (const key in schema) if (self2.RULES.all[key]) return true;
     return false;
   }
   function isSchemaObj(it) {
@@ -14851,8 +14851,8 @@ var require_validate = /* @__PURE__ */ __commonJSMin(((exports) => {
     schemaKeywords(it, types, !(0, dataType_1.coerceAndCheckDataType)(it, types), errsCount);
   }
   function checkRefsAndKeywords(it) {
-    const { schema, errSchemaPath, opts, self } = it;
-    if (schema.$ref && opts.ignoreKeywordsWithRef && (0, util_1.schemaHasRulesButRef)(schema, self.RULES)) self.logger.warn(`$ref: keywords ignored in schema at path "${errSchemaPath}"`);
+    const { schema, errSchemaPath, opts, self: self2 } = it;
+    if (schema.$ref && opts.ignoreKeywordsWithRef && (0, util_1.schemaHasRulesButRef)(schema, self2.RULES)) self2.logger.warn(`$ref: keywords ignored in schema at path "${errSchemaPath}"`);
   }
   function checkNoDefault(it) {
     const { schema, opts } = it;
@@ -14888,8 +14888,8 @@ var require_validate = /* @__PURE__ */ __commonJSMin(((exports) => {
     if (items instanceof codegen_1.Name) gen.assign((0, codegen_1._)`${evaluated}.items`, items);
   }
   function schemaKeywords(it, types, typeErrors, errsCount) {
-    const { gen, schema, data, allErrors, opts, self } = it;
-    const { RULES } = self;
+    const { gen, schema, data, allErrors, opts, self: self2 } = it;
+    const { RULES } = self2;
     if (schema.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema, RULES))) {
       gen.block(() => keywordCode(it, "$ref", RULES.all.$ref.definition));
       return;
@@ -16911,10 +16911,10 @@ var require_ref = /* @__PURE__ */ __commonJSMin(((exports) => {
     schemaType: "string",
     code(cxt) {
       const { gen, schema: $ref, it } = cxt;
-      const { baseId, schemaEnv: env, validateName, opts, self } = it;
+      const { baseId, schemaEnv: env, validateName, opts, self: self2 } = it;
       const { root: root2 } = env;
       if (($ref === "#" || $ref === "#/") && baseId === root2.baseId) return callRootRef();
-      const schOrEnv = compile_1.resolveRef.call(self, root2, baseId, $ref);
+      const schOrEnv = compile_1.resolveRef.call(self2, root2, baseId, $ref);
       if (schOrEnv === void 0) throw new ref_error_1.default(it.opts.uriResolver, baseId, $ref);
       if (schOrEnv instanceof compile_1.SchemaEnv) return callValidate(schOrEnv);
       return inlineRefSchema(schOrEnv);
@@ -18174,13 +18174,13 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
     },
     code(cxt, ruleType) {
       const { gen, data, $data, schema, schemaCode, it } = cxt;
-      const { opts, errSchemaPath, schemaEnv, self } = it;
+      const { opts, errSchemaPath, schemaEnv, self: self2 } = it;
       if (!opts.validateFormats) return;
       if ($data) validate$DataFormat();
       else validateFormat();
       function validate$DataFormat() {
         const fmts = gen.scopeValue("formats", {
-          ref: self.formats,
+          ref: self2.formats,
           code: opts.code.formats
         });
         const fDef = gen.const("fDef", (0, codegen_1._)`${fmts}[${schemaCode}]`);
@@ -18199,7 +18199,7 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
         }
       }
       function validateFormat() {
-        const formatDef = self.formats[schema];
+        const formatDef = self2.formats[schema];
         if (!formatDef) {
           unknownFormat();
           return;
@@ -18209,7 +18209,7 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
         if (fmtType === ruleType) cxt.pass(validCondition());
         function unknownFormat() {
           if (opts.strictSchema === false) {
-            self.logger.warn(unknownMsg());
+            self2.logger.warn(unknownMsg());
             return;
           }
           throw new Error(unknownMsg());
@@ -18635,9 +18635,9 @@ var require_dynamicAnchor = /* @__PURE__ */ __commonJSMin(((exports) => {
   }
   exports.dynamicAnchor = dynamicAnchor;
   function _getValidate(cxt) {
-    const { schemaEnv, schema, self } = cxt.it;
+    const { schemaEnv, schema, self: self2 } = cxt.it;
     const { root: root2, baseId, localRefs, meta: meta2 } = schemaEnv.root;
-    const { schemaId } = self.opts;
+    const { schemaId } = self2.opts;
     const sch = new compile_1.SchemaEnv({
       schema,
       schemaId,
@@ -18646,7 +18646,7 @@ var require_dynamicAnchor = /* @__PURE__ */ __commonJSMin(((exports) => {
       localRefs,
       meta: meta2
     });
-    compile_1.compileSchema.call(self, sch);
+    compile_1.compileSchema.call(self2, sch);
     return (0, ref_1.getValidate)(cxt, sch);
   }
   exports.default = def;
@@ -19946,14 +19946,14 @@ var require_limit = /* @__PURE__ */ __commonJSMin(((exports) => {
     error: error2,
     code(cxt) {
       const { gen, data, schemaCode, keyword, it } = cxt;
-      const { opts, self } = it;
+      const { opts, self: self2 } = it;
       if (!opts.validateFormats) return;
-      const fCxt = new ajv_1.KeywordCxt(it, self.RULES.all.format.definition, "format");
+      const fCxt = new ajv_1.KeywordCxt(it, self2.RULES.all.format.definition, "format");
       if (fCxt.$data) validate$DataFormat();
       else validateFormat();
       function validate$DataFormat() {
         const fmts = gen.scopeValue("formats", {
-          ref: self.formats,
+          ref: self2.formats,
           code: opts.code.formats
         });
         const fmt = gen.const("fmt", (0, codegen_1._)`${fmts}[${fCxt.schemaCode}]`);
@@ -19961,7 +19961,7 @@ var require_limit = /* @__PURE__ */ __commonJSMin(((exports) => {
       }
       function validateFormat() {
         const format = fCxt.schema;
-        const fmtDef = self.formats[format];
+        const fmtDef = self2.formats[format];
         if (!fmtDef || fmtDef === true) return;
         if (typeof fmtDef != "object" || fmtDef instanceof RegExp || typeof fmtDef.compare != "function") throw new Error(`"${keyword}": format "${format}" does not define "compare" function`);
         const fmt = gen.scopeValue("formats", {
@@ -22512,6 +22512,166 @@ async function createAdr(root2, input, now = /* @__PURE__ */ new Date()) {
   return `docs/adr/${name}`;
 }
 
+// plugin/skills/tarjeta/scripts/check-card.mjs
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
+import { fileURLToPath } from "node:url";
+var norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+var normHeading = (s) => norm(s).replace(/[\s:.#]+$/, "");
+var SECTIONS = [
+  ["por que", "Por qu\xE9", true],
+  ["que cambia", "Qu\xE9 cambia", true],
+  ["como", "C\xF3mo", false],
+  ["hecho cuando", "Hecho cuando", true],
+  ["riesgo", "Riesgo", false]
+];
+var ALIASES = /* @__PURE__ */ new Map([
+  ["why", "por que"],
+  ["what changes", "que cambia"],
+  ["scope", "que cambia"],
+  ["alcance", "que cambia"],
+  ["how", "como"],
+  ["pasos", "como"],
+  ["done when", "hecho cuando"],
+  ["riesgos", "riesgo"],
+  ["risk", "riesgo"],
+  ["risks", "riesgo"]
+]);
+var LEGACY = new Map(
+  [
+    [["Historia", "Story", "Problema", "Historia o problema", "Problem statement"], "## Por qu\xE9"],
+    [["Contexto", "Context", "Contexto y enlaces"], "## Por qu\xE9"],
+    [["Criterios de aceptaci\xF3n", "Acceptance criteria"], "## Hecho cuando"],
+    [["Definici\xF3n de hecho", "Definition of done"], "## Hecho cuando"],
+    [["Fuera de alcance", "Out of scope"], "the footer line"],
+    [["Estimaci\xF3n", "Estimate", "Tama\xF1o", "Size"], "the footer line"],
+    [["Dependencias", "Dependencies"], "the footer line"]
+  ].flatMap(([labels, use]) => labels.map((label2) => [normHeading(label2), [label2, use]]))
+);
+var FOOTER_LABELS = [
+  ["fuera de alcance", "Fuera de alcance"],
+  ["estimacion", "Estimaci\xF3n"],
+  ["dependencias", "Dependencias"]
+];
+var FOOTER_HINT = "**Fuera de alcance:** \u2026 \xB7 **Estimaci\xF3n:** \u2026 \xB7 **Dependencias:** \u2026";
+var SIZES = /* @__PURE__ */ new Set(["xs", "s", "m", "l", "xl", "1", "2", "3", "5", "8", "13"]);
+var PLACEHOLDER = /(<[^>\n]+>|\bTODO\b|\bTBD\b|\b[Ll][Oo][Rr][Ee][Mm]\b)/;
+var ITEM = /^([-*+]|\d+[.)])\s+\S/;
+var prose = (s) => s.replace(/`[^`\n]*`/g, "");
+function parseFooter(line) {
+  const plain = norm(line.replace(/[*_]/g, ""));
+  const at = FOOTER_LABELS.map(([key]) => plain.indexOf(`${key}:`));
+  if (at.some((i) => i < 0) || !(at[0] < at[1] && at[1] < at[2])) return null;
+  const value = (k) => {
+    const start = at[k] + FOOTER_LABELS[k][0].length + 1;
+    const end = k < 2 ? at[k + 1] : plain.length;
+    return plain.slice(start, end).replace(/[·|]\s*$/, "").trim();
+  };
+  return [value(0), value(1), value(2)];
+}
+function checkCard(markdown) {
+  const errors = [];
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  let inFence = false;
+  const h1 = [];
+  const sections = /* @__PURE__ */ new Map();
+  const legacy = [];
+  const repeated = [];
+  let footer = null;
+  let footerLine = "";
+  let current = null;
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = /^(#{1,2})\s+(.+?)\s*$/.exec(line);
+    const f = !m && footer === null ? parseFooter(line) : null;
+    if (m && m[1] === "#") {
+      h1.push(m[2].replace(/\s+#+$/, ""));
+      current = null;
+    } else if (m) {
+      const key = normHeading(m[2]);
+      current = ALIASES.get(key) ?? key;
+      if (LEGACY.has(current) && !legacy.includes(current)) legacy.push(current);
+      if (sections.has(current)) {
+        if (!repeated.includes(current)) repeated.push(current);
+        current = null;
+      } else sections.set(current, []);
+    } else if (f) {
+      footer = f;
+      footerLine = line;
+    } else if (current !== null) {
+      sections.get(current).push(line);
+    }
+  }
+  if (h1.length !== 1) errors.push(`expected exactly one H1 title, found ${h1.length}`);
+  else {
+    const t = h1[0];
+    if (t.length < 8 || t.length > 100) errors.push("title must be 8-100 characters");
+    if (PLACEHOLDER.test(prose(t))) errors.push("title contains a placeholder");
+  }
+  for (const key of legacy) {
+    const [label2, use] = LEGACY.get(key);
+    errors.push(`old-format section: ## ${label2} (use ${use})`);
+  }
+  for (const key of repeated) {
+    const label2 = SECTIONS.find(([k]) => k === key)?.[1] ?? key;
+    errors.push(`repeated section: ## ${label2} (merge both into one)`);
+  }
+  for (const [key, label2, required2] of SECTIONS) {
+    const body = sections.get(key);
+    if (!body) {
+      if (required2) errors.push(`missing section: ## ${label2}`);
+      continue;
+    }
+    const text2 = body.join("\n").trim();
+    if (text2 === "") errors.push(`empty section: ## ${label2}`);
+    else if (PLACEHOLDER.test(prose(text2))) errors.push(`placeholder left in section: ## ${label2}`);
+  }
+  const why = sections.get("por que");
+  if (why) {
+    const n = why.filter((l) => l.trim() !== "").length;
+    if (n > 4) errors.push(`## Por qu\xE9 must be at most 4 lines, found ${n}`);
+  }
+  const done = sections.get("hecho cuando");
+  if (done) {
+    const n = done.filter((l) => ITEM.test(l)).length;
+    if (n < 2 || n > 6) errors.push(`## Hecho cuando needs 2-6 checkable items, found ${n}`);
+  }
+  const risk = sections.get("riesgo");
+  if (risk) {
+    const items = risk.filter((l) => ITEM.test(l));
+    const units = items.length > 0 ? items : [risk.join(" ")];
+    if (units.some((u) => !/\bmitigaci[oó]n\b|\bmitigation\b/i.test(u)))
+      errors.push('## Riesgo: every risk needs its mitigation ("mitigaci\xF3n: ...")');
+  }
+  if (!footer) errors.push(`missing footer line: ${FOOTER_HINT}`);
+  else {
+    FOOTER_LABELS.forEach(([, label2], i) => {
+      if (footer[i] === "") errors.push(`footer: empty value for ${label2}`);
+    });
+    if (PLACEHOLDER.test(prose(footerLine))) errors.push("placeholder left in footer line");
+    const words = footer[1].split(/[\s:,.;()]+/).filter(Boolean);
+    if (footer[1] !== "" && !words.some((w) => SIZES.has(w)))
+      errors.push("footer: Estimaci\xF3n must contain a size: XS, S, M, L, XL or 1/2/3/5/8/13");
+  }
+  return { ok: errors.length === 0, errors };
+}
+var self = fileURLToPath(import.meta.url);
+if (basename(self) === "check-card.mjs" && process.argv[1] === self) {
+  const arg = process.argv[2];
+  if (!arg) {
+    console.error("usage: check-card.mjs <file.md | ->");
+    process.exit(2);
+  }
+  const md = readFileSync(arg === "-" ? 0 : arg, "utf8");
+  const result = checkCard(md);
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(result.ok ? 0 : 1);
+}
+
 // src/mcp/standard.ts
 var CARD_SECTIONS = [
   {
@@ -22646,13 +22806,8 @@ function lintCard(markdown) {
   const done = bodies.get("done-when") ?? [];
   const items = done.filter((l) => /^([-*+]|\d+[.)])\s+\S/.test(l)).length;
   const criteria = items >= 2 && items <= 6;
-  return {
-    ok: missing.length === 0 && empty.length === 0 && legacy.length === 0 && criteria,
-    missing,
-    empty,
-    legacy,
-    criteria
-  };
+  const { ok, errors } = checkCard(markdown);
+  return { ok, missing, empty, legacy, criteria, errors };
 }
 
 // src/mcp/conventions.ts
@@ -22684,12 +22839,13 @@ async function readTopic(root2, topic) {
 }
 
 // src/mcp/server.ts
+var SERVER_VERSION = "0.3.0";
 var MAX_CARD_CHARS = 1e5;
 var text = (t) => ({ content: [{ type: "text", text: t }] });
 var fail = (t) => ({ content: [{ type: "text", text: t }], isError: true });
 function createServer(deps = { root: process.cwd() }) {
   const server = new McpServer(
-    { name: "brujula", version: "0.1.0" },
+    { name: "brujula", version: SERVER_VERSION },
     {
       instructions: "Brujula: team toolkit. Use brujula_conventions before coding in an unfamiliar area, brujula_adr_create only when the user has decided something, brujula_card_lint whenever the user asks to review or check a work item or card draft."
     }
@@ -22720,7 +22876,7 @@ function createServer(deps = { root: process.cwd() }) {
       title: "Create an ADR",
       description: "Writes a new Architecture Decision Record to docs/adr/NNNN-slug.md and returns its path. Only call it when the user has explicitly decided something worth recording. Never edits existing ADRs. If a decision replaces an older one, say so in 'context'.",
       inputSchema: object({
-        title: string2().min(5).max(100).describe("Short imperative title, e.g. 'Use SQLite for the docs index'"),
+        title: string2().min(5).max(100).describe("Short imperative title, e.g. 'Publish the plugin from a git tag'"),
         context: string2().min(20).describe("The forces at play: problem, constraints, alternatives considered"),
         decision: string2().min(10).describe("What was decided, in one or two sentences, active voice"),
         consequences: string2().min(10).describe("What gets easier, what gets harder, what to revisit"),
@@ -22741,16 +22897,17 @@ function createServer(deps = { root: process.cwd() }) {
     "brujula_card_lint",
     {
       title: "Lint a work item card",
-      description: "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: required sections (Por qu\xE9, Qu\xE9 cambia, Hecho cuando) present and non-empty, 2-6 criteria in Hecho cuando, the footer line (Fuera de alcance \xB7 Estimaci\xF3n \xB7 Dependencias) and no old heavy-format headings. Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI (e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
+      description: "Checks a work item (tarjeta) draft in Markdown against the team card standard, with the same rules as the tarjeta skill: one H1 title, required sections (Por qu\xE9, Qu\xE9 cambia, Hecho cuando) present and filled, Por qu\xE9 in at most 4 lines, 2-6 criteria in Hecho cuando, a mitigation for every risk, the footer line (Fuera de alcance \xB7 Estimaci\xF3n with a size \xB7 Dependencias), no placeholders and no old heavy-format headings. Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI (e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. Pass the full card Markdown. Returns every broken rule in 'errors'; it checks form, not whether the content is right (for that, use the refinador agent).",
       inputSchema: strictObject({
         markdown: string2().describe("The full card as Markdown: H1 title and H2 sections, English or Spanish headings")
       }),
       outputSchema: object({
-        ok: boolean2().describe("True when nothing is missing, empty or legacy and the criteria count is 2-6"),
+        ok: boolean2().describe("True when the card breaks no rule (errors is empty)"),
         missing: array(string2()).describe("Ids of required sections with no heading (or no footer line)"),
         empty: array(string2()).describe("Ids of sections whose heading has no content"),
         legacy: array(string2()).describe("Ids of old heavy-format headings (Historia, Definici\xF3n de hecho...) to merge into the new ones"),
-        criteria: boolean2().describe("True when Hecho cuando has 2-6 checkable items")
+        criteria: boolean2().describe("True when Hecho cuando has 2-6 checkable items"),
+        errors: array(string2()).describe("Every rule the card breaks, one sentence each, ready to show the user")
       }),
       annotations: { readOnlyHint: true, openWorldHint: false }
     },
@@ -22761,13 +22918,11 @@ function createServer(deps = { root: process.cwd() }) {
         );
       }
       const result = lintCard(markdown);
-      const summary = result.ok ? "Card OK: required sections present and filled, 2-6 criteria in Hecho cuando, footer line present." : [
+      const summary = result.ok ? "Card OK: it follows the card standard." : [
         "Card NOT ready.",
-        result.missing.length ? `Missing sections: ${result.missing.join(", ")}.` : "",
-        result.empty.length ? `Empty sections: ${result.empty.join(", ")}.` : "",
         result.legacy.length ? `Old-format sections to merge into the new ones: ${result.legacy.join(", ")}.` : "",
-        result.criteria ? "" : "Hecho cuando needs 2-6 checkable items (Dado/Cuando/Entonces or a verifiable list)."
-      ].filter(Boolean).join(" ");
+        ...result.errors.map((e) => `- ${e}`)
+      ].filter(Boolean).join("\n");
       return { content: [{ type: "text", text: summary }], structuredContent: result };
     }
   );

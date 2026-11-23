@@ -5,6 +5,9 @@ import { lintCard } from "./card-lint.js";
 import { listTopics, readTopic } from "./conventions.js";
 import { CARD_STANDARD } from "./standard.js";
 
+/** Must equal "version" in plugin/.claude-plugin/plugin.json (test/server.test.ts checks it). */
+export const SERVER_VERSION = "0.3.0";
+
 /** Max characters accepted by brujula_card_lint; checked in the handler so the error can guide the model. */
 export const MAX_CARD_CHARS = 100_000;
 
@@ -18,7 +21,7 @@ const fail = (t: string) => ({ content: [{ type: "text" as const, text: t }], is
 /** A factory: serveStdio may call it more than once, so it must return a NEW McpServer each time. */
 export function createServer(deps: ServerDeps = { root: process.cwd() }): McpServer {
   const server = new McpServer(
-    { name: "brujula", version: "0.1.0" },
+    { name: "brujula", version: SERVER_VERSION },
     {
       instructions:
         "Brujula: team toolkit. Use brujula_conventions before coding in an unfamiliar area, brujula_adr_create only when the user has decided something, " +
@@ -62,7 +65,7 @@ export function createServer(deps: ServerDeps = { root: process.cwd() }): McpSer
         "Only call it when the user has explicitly decided something worth recording. " +
         "Never edits existing ADRs. If a decision replaces an older one, say so in 'context'.",
       inputSchema: z.object({
-        title: z.string().min(5).max(100).describe("Short imperative title, e.g. 'Use SQLite for the docs index'"),
+        title: z.string().min(5).max(100).describe("Short imperative title, e.g. 'Publish the plugin from a git tag'"),
         context: z.string().min(20).describe("The forces at play: problem, constraints, alternatives considered"),
         decision: z.string().min(10).describe("What was decided, in one or two sentences, active voice"),
         consequences: z.string().min(10).describe("What gets easier, what gets harder, what to revisit"),
@@ -85,25 +88,28 @@ export function createServer(deps: ServerDeps = { root: process.cwd() }): McpSer
     {
       title: "Lint a work item card",
       description:
-        "Checks the structure of a work item (tarjeta) draft in Markdown against the team card standard: " +
-        "required sections (Por qué, Qué cambia, Hecho cuando) present and non-empty, 2-6 criteria in Hecho cuando, " +
-        "the footer line (Fuera de alcance · Estimación · Dependencias) and no old heavy-format headings. " +
+        "Checks a work item (tarjeta) draft in Markdown against the team card standard, with the same rules as the " +
+        "tarjeta skill: one H1 title, required sections (Por qué, Qué cambia, Hecho cuando) present and filled, " +
+        "Por qué in at most 4 lines, 2-6 criteria in Hecho cuando, a mitigation for every risk, the footer line " +
+        "(Fuera de alcance · Estimación with a size · Dependencias), no placeholders and no old heavy-format headings. " +
         "Call it whenever the user asks to review, check or validate a card, ticket, user story or PBI " +
         "(e.g. 'revisa esta tarjeta', 'valida este work item'), and before refining or publishing one. " +
-        "Pass the full card Markdown. Returns section ids in 'missing' and 'empty'; it checks structure only, not quality.",
+        "Pass the full card Markdown. Returns every broken rule in 'errors'; it checks form, not whether the content is right " +
+        "(for that, use the refinador agent).",
       inputSchema: z.strictObject({
         markdown: z
           .string()
           .describe("The full card as Markdown: H1 title and H2 sections, English or Spanish headings"),
       }),
       outputSchema: z.object({
-        ok: z.boolean().describe("True when nothing is missing, empty or legacy and the criteria count is 2-6"),
+        ok: z.boolean().describe("True when the card breaks no rule (errors is empty)"),
         missing: z.array(z.string()).describe("Ids of required sections with no heading (or no footer line)"),
         empty: z.array(z.string()).describe("Ids of sections whose heading has no content"),
         legacy: z
           .array(z.string())
           .describe("Ids of old heavy-format headings (Historia, Definición de hecho...) to merge into the new ones"),
         criteria: z.boolean().describe("True when Hecho cuando has 2-6 checkable items"),
+        errors: z.array(z.string()).describe("Every rule the card breaks, one sentence each, ready to show the user"),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -116,18 +122,14 @@ export function createServer(deps: ServerDeps = { root: process.cwd() }): McpSer
       }
       const result = lintCard(markdown);
       const summary = result.ok
-        ? "Card OK: required sections present and filled, 2-6 criteria in Hecho cuando, footer line present."
+        ? "Card OK: it follows the card standard."
         : [
             "Card NOT ready.",
-            result.missing.length ? `Missing sections: ${result.missing.join(", ")}.` : "",
-            result.empty.length ? `Empty sections: ${result.empty.join(", ")}.` : "",
             result.legacy.length ? `Old-format sections to merge into the new ones: ${result.legacy.join(", ")}.` : "",
-            result.criteria
-              ? ""
-              : "Hecho cuando needs 2-6 checkable items (Dado/Cuando/Entonces or a verifiable list).",
+            ...result.errors.map((e) => `- ${e}`),
           ]
             .filter(Boolean)
-            .join(" ");
+            .join("\n");
       return { content: [{ type: "text" as const, text: summary }], structuredContent: result };
     },
   );

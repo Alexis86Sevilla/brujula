@@ -1,3 +1,4 @@
+import { checkCard } from "../../plugin/skills/tarjeta/scripts/check-card.mjs";
 import { CARD_SECTIONS, LEGACY_SECTIONS } from "./standard.js";
 
 export interface LintResult {
@@ -10,6 +11,8 @@ export interface LintResult {
   legacy: string[];
   /** True when "Hecho cuando" has 2-6 list items. */
   criteria: boolean;
+  /** Every rule broken, from check-card.mjs (the tarjeta skill's checker), which decides `ok`. */
+  errors: string[];
 }
 
 const normalise = (s: string): string =>
@@ -34,7 +37,10 @@ function isFooter(line: string): boolean {
   return at.every((i) => i >= 0) && at[0]! < at[1]! && at[1]! < at[2]!;
 }
 
-/** Pure card linter: checks structure only (required sections present and filled, 2-6 criteria). */
+/**
+ * Pure card linter. `ok` and `errors` come from check-card.mjs, the single source of the card rules,
+ * so this tool and the tarjeta skill never disagree; the other fields locate the problems by section id.
+ */
 export function lintCard(markdown: string): LintResult {
   const bodies = new Map<string, string[]>();
   const legacy: string[] = [];
@@ -86,11 +92,6 @@ export function lintCard(markdown: string): LintResult {
   const items = done.filter((l) => /^([-*+]|\d+[.)])\s+\S/.test(l)).length;
   const criteria = items >= 2 && items <= 6;
 
-  return {
-    ok: missing.length === 0 && empty.length === 0 && legacy.length === 0 && criteria,
-    missing,
-    empty,
-    legacy,
-    criteria,
-  };
+  const { ok, errors } = checkCard(markdown);
+  return { ok, missing, empty, legacy, criteria, errors };
 }

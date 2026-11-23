@@ -38,6 +38,12 @@ describe("tools", () => {
     expect(tools.map((t) => t.name).sort()).toEqual(["brujula_adr_create", "brujula_card_lint", "brujula_conventions"]);
   });
 
+  it("reports the plugin version as its server version", async () => {
+    await connect();
+    const plugin = JSON.parse(await readFile("plugin/.claude-plugin/plugin.json", "utf8")) as { version: string };
+    expect(client.getServerVersion()?.version).toBe(plugin.version);
+  });
+
   it("brujula_conventions lists topics and serves one", async () => {
     await connect();
     const list = await client.callTool({ name: "brujula_conventions", arguments: {} });
@@ -58,20 +64,20 @@ describe("tools", () => {
   it("brujula_adr_create writes numbered files", async () => {
     await connect();
     const args = {
-      title: "Use SQLite for the docs index",
+      title: "Publish the plugin from a git tag",
       context: "We need a local index with no services to run.",
       decision: "Use better-sqlite3 with FTS5 and sqlite-vec.",
       consequences: "Native module to build; single file to back up.",
     };
     const a = await client.callTool({ name: "brujula_adr_create", arguments: args });
-    expect(firstText(a)).toContain("docs/adr/0001-use-sqlite-for-the-docs-index.md");
+    expect(firstText(a)).toContain("docs/adr/0001-publish-the-plugin-from-a-git-tag.md");
     const b = await client.callTool({
       name: "brujula_adr_create",
       arguments: { ...args, title: "Second decision here" },
     });
     expect(firstText(b)).toContain("docs/adr/0002-second-decision-here.md");
-    const file = await readFile(join(root, "docs/adr/0001-use-sqlite-for-the-docs-index.md"), "utf8");
-    expect(file).toContain("# ADR-0001: Use SQLite for the docs index");
+    const file = await readFile(join(root, "docs/adr/0001-publish-the-plugin-from-a-git-tag.md"), "utf8");
+    expect(file).toContain("# ADR-0001: Publish the plugin from a git tag");
     expect(file).toContain("- Status: proposed");
   });
 
@@ -112,7 +118,7 @@ describe("brujula_card_lint", () => {
   it("accepts a complete Spanish card", async () => {
     await connect();
     const r = await lint(complete);
-    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true });
+    expect(r.structuredContent).toEqual({ ok: true, missing: [], empty: [], legacy: [], criteria: true, errors: [] });
   });
 
   it("flags headings with empty bodies", async () => {
@@ -129,6 +135,13 @@ describe("brujula_card_lint", () => {
     const r = await lint(`${complete}\n\n## Historia\nComo usuario quiero algo.`);
     expect(r.structuredContent).toMatchObject({ ok: false, legacy: ["story"] });
     expect(firstText(r)).toContain("Old-format sections to merge into the new ones: story.");
+  });
+
+  it("rejects a card the tarjeta skill rejects, and says why", async () => {
+    await connect();
+    const r = await lint(`${complete}\n\n## Riesgo\n- Puede fallar el correo.`);
+    expect(r.structuredContent).toMatchObject({ ok: false, missing: [], empty: [], legacy: [], criteria: true });
+    expect(firstText(r)).toContain('every risk needs its mitigation ("mitigación: ...")');
   });
 
   it("returns a guided isError (no exception) for a 1 MB input", async () => {

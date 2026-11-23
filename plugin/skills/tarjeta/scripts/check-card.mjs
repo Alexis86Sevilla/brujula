@@ -2,11 +2,17 @@
 // Validates a work item ("tarjeta") written in markdown against the Brújula quality standard.
 // Usage: node check-card.mjs <file.md>        -> JSON on stdout, exit 0 (valid) or 1 (invalid)
 //        cat card.md | node check-card.mjs -  -> same, reading stdin
+// This is the single source of the card rules: the brujula_card_lint MCP tool (src/mcp/card-lint.ts)
+// imports checkCard from here. Keep the aliases and old headings in sync with src/mcp/standard.ts;
+// test/card-lint.test.ts fails when they drift.
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const norm = (s) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+// Headings also ignore a trailing ":", "." or closing "#"s: "## Por qué:" is "por que".
+const normHeading = (s) => norm(s).replace(/[\s:.#]+$/, "");
 
 // [normalised heading, label, required]
 const SECTIONS = [
@@ -16,17 +22,30 @@ const SECTIONS = [
   ["hecho cuando", "Hecho cuando", true],
   ["riesgo", "Riesgo", false],
 ];
-const ALIASES = new Map([["riesgos", "riesgo"]]);
-// Headings of the old heavy format and where their content goes now.
-const LEGACY = new Map([
-  ["historia", ["Historia", "## Por qué"]],
-  ["contexto", ["Contexto", "## Por qué"]],
-  ["criterios de aceptacion", ["Criterios de aceptación", "## Hecho cuando"]],
-  ["definicion de hecho", ["Definición de hecho", "## Hecho cuando"]],
-  ["fuera de alcance", ["Fuera de alcance", "the footer line"]],
-  ["estimacion", ["Estimación", "the footer line"]],
-  ["dependencias", ["Dependencias", "the footer line"]],
+const ALIASES = new Map([
+  ["why", "por que"],
+  ["what changes", "que cambia"],
+  ["scope", "que cambia"],
+  ["alcance", "que cambia"],
+  ["how", "como"],
+  ["pasos", "como"],
+  ["done when", "hecho cuando"],
+  ["riesgos", "riesgo"],
+  ["risk", "riesgo"],
+  ["risks", "riesgo"],
 ]);
+// Headings of the old heavy format and where their content goes now.
+const LEGACY = new Map(
+  [
+    [["Historia", "Story", "Problema", "Historia o problema", "Problem statement"], "## Por qué"],
+    [["Contexto", "Context", "Contexto y enlaces"], "## Por qué"],
+    [["Criterios de aceptación", "Acceptance criteria"], "## Hecho cuando"],
+    [["Definición de hecho", "Definition of done"], "## Hecho cuando"],
+    [["Fuera de alcance", "Out of scope"], "the footer line"],
+    [["Estimación", "Estimate", "Tamaño", "Size"], "the footer line"],
+    [["Dependencias", "Dependencies"], "the footer line"],
+  ].flatMap(([labels, use]) => labels.map((label) => [normHeading(label), [label, use]])),
+);
 const FOOTER_LABELS = [
   ["fuera de alcance", "Fuera de alcance"],
   ["estimacion", "Estimación"],
@@ -63,6 +82,7 @@ export function checkCard(markdown) {
   const h1 = [];
   const sections = new Map();
   const legacy = [];
+  const repeated = [];
   let footer = null;
   let footerLine = "";
   let current = null;
@@ -75,13 +95,16 @@ export function checkCard(markdown) {
     const m = /^(#{1,2})\s+(.+?)\s*$/.exec(line);
     const f = !m && footer === null ? parseFooter(line) : null;
     if (m && m[1] === "#") {
-      h1.push(m[2]);
+      h1.push(m[2].replace(/\s+#+$/, ""));
       current = null;
     } else if (m) {
-      const key = norm(m[2]);
+      const key = normHeading(m[2]);
       current = ALIASES.get(key) ?? key;
-      if (LEGACY.has(current)) legacy.push(current);
-      sections.set(current, []);
+      if (LEGACY.has(current) && !legacy.includes(current)) legacy.push(current);
+      if (sections.has(current)) {
+        if (!repeated.includes(current)) repeated.push(current);
+        current = null; // the first occurrence wins; the repeat is reported below
+      } else sections.set(current, []);
     } else if (f) {
       footer = f;
       footerLine = line;
@@ -100,6 +123,11 @@ export function checkCard(markdown) {
   for (const key of legacy) {
     const [label, use] = LEGACY.get(key);
     errors.push(`old-format section: ## ${label} (use ${use})`);
+  }
+
+  for (const key of repeated) {
+    const label = SECTIONS.find(([k]) => k === key)?.[1] ?? key;
+    errors.push(`repeated section: ## ${label} (merge both into one)`);
   }
 
   for (const [key, label, required] of SECTIONS) {
@@ -147,7 +175,10 @@ export function checkCard(markdown) {
   return { ok: errors.length === 0, errors };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Run as a CLI only when this very file is the entry point. The basename check matters: the MCP
+// server bundles this module into dist/server.mjs, where argv[1] equals import.meta.url too.
+const self = fileURLToPath(import.meta.url);
+if (basename(self) === "check-card.mjs" && process.argv[1] === self) {
   const arg = process.argv[2];
   if (!arg) {
     console.error("usage: check-card.mjs <file.md | ->");
