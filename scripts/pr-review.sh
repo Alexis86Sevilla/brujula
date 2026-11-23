@@ -18,19 +18,29 @@ head_ref="${HEAD_REF:-HEAD}"
 range="origin/$target...$head_ref"
 if [[ -n "${BASE_SHA:-}" ]]; then
   # Must be an ancestor of the head: after a force-push the old sha describes a dropped history.
-  if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null && git merge-base --is-ancestor "$BASE_SHA" "$head_ref"; then
+  if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null || ! git merge-base --is-ancestor "$BASE_SHA" "$head_ref"; then
+    echo "BASE_SHA $BASE_SHA not found or not an ancestor of $head_ref; reviewing the full diff" >&2
+  elif [[ -n "$(git rev-list --merges "$BASE_SHA..$head_ref")" ]]; then
+    # A merge (e.g. of the target branch) would bring other people's changes into BASE..HEAD.
+    echo "merge commits since $BASE_SHA; reviewing the full diff" >&2
+  else
     range="$BASE_SHA..$head_ref"
     echo "incremental review: $range" >&2
-  else
-    echo "BASE_SHA $BASE_SHA not found or not an ancestor of $head_ref; reviewing the full diff" >&2
   fi
 fi
 
-lockfiles=(':(exclude)package-lock.json' ':(exclude)*.lock')
-git diff --no-color -U12 "$range" -- . "${lockfiles[@]}" > "$out/pr.diff"
+# Known lockfiles (exact names, any depth) are excluded from review. A made-up "*.lock" is reviewed.
+lockfiles=()
+for f in package-lock.json npm-shrinkwrap.json pnpm-lock.yaml yarn.lock bun.lock bun.lockb; do
+  lockfiles+=(":(exclude,glob)**/$f")
+done
+# --text --no-textconv: a PR cannot hide code from the model with .gitattributes (-diff, textconv).
+git diff --no-color --text --no-textconv -U12 "$range" -- . "${lockfiles[@]}" > "$out/pr.diff"
+# Exact list of changed paths (unquoted, so non-ASCII names match the model's paths).
+git -c core.quotePath=false diff --name-only "$range" -- . "${lockfiles[@]}" > "$out/files.txt"
 
-# A push that only touches docs/ or lockfiles spends nothing.
-code_files="$(git diff --name-only "$range" -- . "${lockfiles[@]}" ':(exclude)docs/**')"
+# A push that only touches Markdown under docs/ or lockfiles spends nothing (scripts in docs/ do count).
+code_files="$(git diff --name-only "$range" -- . "${lockfiles[@]}" ':(exclude,glob)docs/**/*.md')"
 
 render_md() {
   jq -r '
@@ -103,11 +113,12 @@ if env_json="$(cd "$workdir" && run_claude "Review the diff on stdin." \
    && assert_ok "$env_json" \
    && jq -e '.structured_output | type == "object"' >/dev/null <<<"$env_json"; then
   log_cost "$env_json"
-  # Independent verification in code: keep only findings that point at files present in the diff,
+  # Independent verification in code: keep only findings whose path is exactly a changed file,
   # and never publish a summary that approves the PR (a successful injection would say so).
-  jq --rawfile diff "$out/pr.diff" --argjson trunc "$truncated" '
-    .structured_output
-    | .findings |= map(select(.path as $p | $diff | contains("+++ b/" + $p)))
+  jq --rawfile files "$out/files.txt" --argjson trunc "$truncated" '
+    ($files | split("\n") | map(select(length > 0))) as $changed
+    | .structured_output
+    | .findings |= map(select(.path as $p | $changed | index($p)))
     | if (.summary | test("LGTM|approved|aprobad"; "i")) then .summary = "Resumen descartado: parecía una aprobación." else . end
     | .truncated = $trunc' <<<"$env_json" > "$out/review.json"
 else

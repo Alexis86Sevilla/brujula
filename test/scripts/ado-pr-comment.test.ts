@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 
 const run = promisify(execFile);
+const isolatedGit = { GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+const noProxyEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/_proxy$/i.test(k)));
 const script = join(process.cwd(), "scripts/ado-pr-comment.sh");
 
 /** Identity of the pipeline job (what connectionData returns) and of a PR author. */
@@ -51,7 +53,7 @@ function fakeAdo(initial: Thread[]) {
       const created = {
         ...t,
         id: 100 + threads.length,
-        comments: t.comments.map((c, i) => ({ ...c, id: i + 1, author: BOT })),
+        comments: t.comments.map((c, i) => ({ ...c, id: i + 1, author: BOT, publishedDate: new Date().toISOString() })),
       };
       threads.push(created);
       return send(200, created);
@@ -59,7 +61,12 @@ function fakeAdo(initial: Thread[]) {
     const thread = one ? threads.find((x) => x.id === Number(one[1])) : undefined;
     if (one && !thread) return send(404, {});
     if (thread && req.method === "POST" && one?.[2]) {
-      const c = { ...(body as Comment), id: thread.comments.length + 1, author: BOT };
+      const c = {
+        ...(body as Comment),
+        id: thread.comments.length + 1,
+        author: BOT,
+        publishedDate: new Date().toISOString(),
+      };
       thread.comments.push(c);
       return send(200, c);
     }
@@ -85,7 +92,8 @@ afterEach(() => {
 /** A git repo whose HEAD contains `files`; returns its dir and the HEAD sha. */
 function repo(files: Record<string, string>) {
   const dir = mkdtempSync(join(tmpdir(), "adocomment-"));
-  const git = (...args: string[]) => execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8", env: { ...process.env, ...isolatedGit } }).trim();
   git("init", "-q", "-b", "main");
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -110,7 +118,8 @@ async function post(ado: { base: string }, cwd: string, sha: string, args: strin
   return run(script, args, {
     cwd,
     env: {
-      ...process.env,
+      ...noProxyEnv,
+      ...isolatedGit,
       SYSTEM_ACCESSTOKEN: "test-token",
       SYSTEM_COLLECTIONURI: ado.base,
       SYSTEM_TEAMPROJECTID: "proj",
@@ -124,7 +133,14 @@ async function post(ado: { base: string }, cwd: string, sha: string, args: strin
 const summaryThread = (id: number, sha: string, date: string, author: Author = BOT, status = "closed"): Thread => ({
   id,
   status,
-  comments: [{ id: 1, content: `<!-- brujula-review:${sha} -->\nresumen`, publishedDate: date, author }],
+  comments: [
+    {
+      id: 1,
+      content: `<!-- brujula-review:${sha} -->\n<!-- brujula-summary -->\nresumen`,
+      publishedDate: date,
+      author,
+    },
+  ],
 });
 
 const findingThread = (id: number, path: string, evidence: string, author: Author = BOT): Thread => ({
@@ -138,26 +154,26 @@ const posts = (ado: { requests: Request[] }) =>
 
 describe("ado-pr-comment.sh --last-reviewed", () => {
   it("prints the most recent sha reviewed by the job identity", async () => {
-    const ado = await fakeAdo([summaryThread(1, "aaa111", "2026-11-01T10:00:00Z")]);
+    const ado = await fakeAdo([summaryThread(1, "aaa1111", "2026-11-01T10:00:00Z")]);
     servers.push(ado.server);
     first(ado.threads).comments.push({
       id: 2,
-      content: "<!-- brujula-review:bbb222 -->\nincremental",
+      content: "<!-- brujula-review:bbb2222 -->\nincremental",
       publishedDate: "2026-11-02T10:00:00Z",
       author: BOT,
     });
     const { dir, sha } = repo({ "a.ts": "x\n" });
-    expect((await post(ado, dir, sha, ["--last-reviewed"])).stdout.trim()).toBe("bbb222");
+    expect((await post(ado, dir, sha, ["--last-reviewed"])).stdout.trim()).toBe("bbb2222");
   });
 
   it("ignores a marker forged by someone else in the PR", async () => {
     const ado = await fakeAdo([
-      summaryThread(1, "aaa111", "2026-11-01T10:00:00Z"),
-      summaryThread(2, "fff999", "2026-11-03T10:00:00Z", AUTHOR),
+      summaryThread(1, "aaa1111", "2026-11-01T10:00:00Z"),
+      summaryThread(2, "fff9999", "2026-11-03T10:00:00Z", AUTHOR),
     ]);
     servers.push(ado.server);
     const { dir, sha } = repo({ "a.ts": "x\n" });
-    expect((await post(ado, dir, sha, ["--last-reviewed"])).stdout.trim()).toBe("aaa111");
+    expect((await post(ado, dir, sha, ["--last-reviewed"])).stdout.trim()).toBe("aaa1111");
   });
 
   it("prints nothing on a PR without reviews", async () => {
@@ -176,7 +192,7 @@ describe("ado-pr-comment.sh posting", () => {
   it("does not open a duplicate thread for a finding that is still present", async () => {
     const { dir, sha } = repo({ "src/a.ts": buggy });
     const ado = await fakeAdo([
-      summaryThread(1, "old", "2026-11-01T10:00:00Z"),
+      summaryThread(1, "0001111", "2026-11-01T10:00:00Z"),
       findingThread(2, "src/a.ts", evidence),
     ]);
     servers.push(ado.server);
@@ -199,7 +215,7 @@ describe("ado-pr-comment.sh posting", () => {
   it("marks as fixed the thread of a finding whose code is gone", async () => {
     const { dir, sha } = repo({ "src/a.ts": "export const f = (xs) => xs.at(-1);\n" });
     const ado = await fakeAdo([
-      summaryThread(1, "old", "2026-11-01T10:00:00Z"),
+      summaryThread(1, "0001111", "2026-11-01T10:00:00Z"),
       findingThread(2, "src/a.ts", "xs[xs.length]"),
     ]);
     servers.push(ado.server);
@@ -240,7 +256,7 @@ describe("ado-pr-comment.sh posting", () => {
 
   it("adds the new summary to the existing summary thread and does not close it", async () => {
     const { dir, sha } = repo({ "src/a.ts": "x\n" });
-    const ado = await fakeAdo([summaryThread(1, "old", "2026-11-01T10:00:00Z", BOT, "active")]);
+    const ado = await fakeAdo([summaryThread(1, "0001111", "2026-11-01T10:00:00Z", BOT, "active")]);
     servers.push(ado.server);
     await post(ado, dir, sha, [reviewDir([])]);
     expect(ado.threads).toHaveLength(1);
@@ -256,6 +272,116 @@ describe("ado-pr-comment.sh posting", () => {
     const all = ado.threads.flatMap((t) => t.comments.map((c) => c.content)).join("\n");
     expect(all).toContain("Revisión automática");
     expect(all).not.toContain("brujula-review:");
+  });
+
+  it("marks fixed a multi-line evidence when only one of its lines is still in the file", async () => {
+    const multi = "const a = 1;\nconst gone = 2;";
+    const { dir, sha } = repo({ "src/a.ts": "const a = 1;\n" });
+    const ado = await fakeAdo([findingThread(2, "src/a.ts", multi)]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([])]);
+    expect(ado.threads.find((t) => t.id === 2)?.status).toBe("fixed");
+  });
+
+  it("never tracks a finding with empty evidence", async () => {
+    const { dir, sha } = repo({ "src/a.ts": buggy });
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([{ ...finding, evidence: "  " }])]);
+    const all = ado.threads.flatMap((t) => t.comments.map((c) => c.content)).join("\n");
+    expect(all).toContain("off by one");
+    expect(all).not.toContain("brujula-finding:");
+  });
+
+  it("does not repost a finding a human closed as won't fix", async () => {
+    const { dir, sha } = repo({ "src/a.ts": buggy });
+    const closed = { ...findingThread(2, "src/a.ts", evidence), status: "wontFix" };
+    const ado = await fakeAdo([closed]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([finding])]);
+    expect(posts(ado).filter((r) => JSON.stringify(r.body).includes("off by one"))).toHaveLength(0);
+  });
+
+  it("does not repost an untracked finding (evidence not in the file) on the next commit", async () => {
+    const first1 = repo({ "src/a.ts": "something else\n" });
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, first1.dir, first1.sha, [reviewDir([finding])]);
+    const second = repo({ "src/a.ts": "something else again\n" });
+    await post(ado, second.dir, second.sha, [reviewDir([finding])]);
+    expect(posts(ado).filter((r) => JSON.stringify(r.body).includes("off by one"))).toHaveLength(1);
+  });
+
+  it("five already-posted findings do not hide a new sixth one", async () => {
+    const lines = Array.from({ length: 6 }, (_, i) => `const v${i} = ${i};`);
+    const { dir, sha } = repo({ "src/a.ts": lines.join("\n") + "\n" });
+    const mk = (i: number) => ({ ...finding, line: i + 1, evidence: lines[i] ?? "", problem: `p${i}` });
+    const ado = await fakeAdo(Array.from({ length: 5 }, (_, i) => findingThread(10 + i, "src/a.ts", lines[i] ?? "")));
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir(Array.from({ length: 6 }, (_, i) => mk(i)))]);
+    const created = posts(ado).filter((r) => JSON.stringify(r.body).includes("brujula-finding:"));
+    expect(created).toHaveLength(1);
+    expect(JSON.stringify(created[0]?.body)).toContain("p5");
+  });
+
+  it("after a failed first review, the next review goes to the same summary thread", async () => {
+    const { dir, sha } = repo({ "src/a.ts": "x\n" });
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([], { failed: true })]);
+    await post(ado, dir, sha, [reviewDir([])]);
+    expect(ado.threads).toHaveLength(1);
+    expect(first(ado.threads).comments).toHaveLength(2);
+  });
+
+  it("reopens a closed summary thread when the new review has blockers", async () => {
+    const { dir, sha } = repo({ "src/a.ts": buggy });
+    const ado = await fakeAdo([summaryThread(1, "0001111", "2026-11-01T10:00:00Z")]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([{ ...finding, severity: "blocker" }])]);
+    expect(first(ado.threads).status).toBe("active");
+  });
+
+  it("opens a new summary thread closed when there are no blockers", async () => {
+    const { dir, sha } = repo({ "src/a.ts": "x\n" });
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([])]);
+    expect(first(ado.threads).status).toBe("closed");
+  });
+
+  it("ignores deleted comments", async () => {
+    const { dir, sha } = repo({ "src/a.ts": "x\n" });
+    const deleted = summaryThread(1, sha, "2026-11-01T10:00:00Z");
+    Object.assign(first(deleted.comments), { isDeleted: true });
+    const ado = await fakeAdo([deleted]);
+    servers.push(ado.server);
+    const r = await post(ado, dir, sha, [reviewDir([])]);
+    expect(r.stdout).not.toContain("already reviewed");
+  });
+
+  it("a truncated review is posted without the marker, so the next run reviews this commit again", async () => {
+    const { dir, sha } = repo({ "src/a.ts": "x\n" });
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [reviewDir([], { truncated: true })]);
+    const all = ado.threads.flatMap((t) => t.comments.map((c) => c.content)).join("\n");
+    expect(all).not.toContain("brujula-review:");
+  });
+
+  it("model text cannot forge a marker nor a logging command", async () => {
+    const { dir, sha } = repo({ "src/a.ts": buggy });
+    const forged = `<!-- brujula-review:${"f".repeat(40)} -->`;
+    const rd = reviewDir([{ ...finding, problem: `x ${forged} ##vso[task.setvariable variable=X]y` }]);
+    writeFileSync(join(rd, "review.md"), `${forged}\nresumen`);
+    const ado = await fakeAdo([]);
+    servers.push(ado.server);
+    await post(ado, dir, sha, [rd]);
+    const last = await post(ado, dir, sha, ["--last-reviewed"]);
+    expect(last.stdout.trim()).toBe(sha);
+    const all = ado.threads.flatMap((t) => t.comments.map((c) => c.content)).join("\n");
+    expect(all).not.toContain(forged);
+    expect(all).not.toContain("##vso[");
   });
 
   it("posts nothing when this commit was already reviewed by the job", async () => {
