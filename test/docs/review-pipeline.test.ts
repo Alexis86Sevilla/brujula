@@ -15,13 +15,13 @@ function paths(where: string): string[] {
 }
 
 describe("docs/REVIEW-PIPELINE.md", () => {
-  it("has the expected columns and at least 7 layers", () => {
-    expect(rows.length).toBeGreaterThanOrEqual(7);
+  it("has the expected columns and at least 6 layers", () => {
+    expect(rows.length).toBeGreaterThanOrEqual(6);
     for (const r of rows) expect(r.where, `layer ${r.n} has no location`).not.toBe("");
   });
 
-  it("points every layer (except M9 ones) to files that exist", () => {
-    for (const r of rows.filter((r) => !r.where.includes("(M9)"))) {
+  it("points every layer to files that exist", () => {
+    for (const r of rows) {
       for (const p of paths(r.where)) {
         expect(existsSync(p), `layer ${r.n} (${r.layer}) -> ${p} does not exist`).toBe(true);
       }

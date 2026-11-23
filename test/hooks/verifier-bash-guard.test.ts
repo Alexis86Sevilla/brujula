@@ -13,7 +13,7 @@ function run(command: string) {
 }
 
 describe("verifier-bash-guard hook", () => {
-  it.each(["npm test", "npx vitest run test/ingest", "git diff main...HEAD", "git log --oneline -5"])(
+  it.each(["npm test", "npx vitest run test/mcp", "git diff main...HEAD", "git log --oneline -5"])(
     "allows %s",
     (cmd) => {
       expect(run(cmd).code).toBe(0);

@@ -1,7 +1,7 @@
 ---
 name: tarjeta
-description: Turns a rough idea into a short, fully defined Azure Boards work item written in markdown (outcome title, why, what changes, optional steps, 2-6 checkable done-when criteria, optional risk, and a footer line with out of scope, estimate and dependencies) and validates it with a checker script. Use when the user asks to write, define, refine or prepare a card, ticket, work item, user story or PBI from an idea, a bug report or a conversation.
-when_to_use: Spanish requests such as "crea una tarjeta", "redacta la historia de usuario", "define este PBI", "prepárame el ticket", "convierte esto en una tarjeta bien definida", "escribe los criterios de aceptación de esta idea".
+description: Turns a rough idea into a short, fully defined Azure Boards work item written in markdown (outcome title, why, what changes, optional steps, 2-6 checkable done-when criteria, optional risk, and a footer line with out of scope, estimate and dependencies) and validates it with a checker script. Use when the user asks to write, define, refine or prepare ONE card, ticket, work item, user story or PBI from an idea, a bug report or a conversation; for several cards about a topic use the backlog skill.
+when_to_use: Spanish requests such as "crea una tarjeta", "redacta esta historia de usuario", "define este PBI", "prepárame el ticket", "convierte esto en una tarjeta bien definida", "escribe los criterios de aceptación de esta idea".
 argument-hint: [rough idea]
 allowed-tools: Read Glob Write Bash(node *check-card.mjs*)
 ---

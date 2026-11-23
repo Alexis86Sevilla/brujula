@@ -55,7 +55,8 @@ compañero, así que solo cambian cuando alguien publica una etiqueta nueva y ac
 ## Primeros pasos
 
 1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
-2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` y revísala con `bash scripts/card-lint.sh`.
+2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` (la valida sola) y pide al agente
+   `refinador` que la juzgue. La guía completa de uso está en `docs/USO.md`.
 
 ## Consejos
 

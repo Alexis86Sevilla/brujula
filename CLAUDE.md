@@ -1,7 +1,7 @@
 # Brújula
 
 Plugin y toolkit de Claude Code para un equipo en Azure DevOps. Node 22, TypeScript ESM,
-vitest, zod. Se construye por módulos; lo que aún no existe está marcado como (futuro).
+vitest, zod.
 
 ## Comandos
 - Todo en verde antes de dar algo por hecho: `npm run check` (typecheck + lint + format + tests)
@@ -22,7 +22,7 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
   `.claude/rules/mcp-server.md`.
 - No usar `any`. Usar `unknown` y estrechar con zod. Motivo: `strict` solo protege si no hay
   agujeros explícitos.
-- Decisiones de arquitectura en `docs/adr/`. Leer antes de proponer cambios de store o de stack.
+- Decisiones de arquitectura en `docs/adr/`. Leer antes de proponer cambios de stack.
 
 ## Lo que no es obvio
 - Los textos de usuario y las tarjetas de trabajo se escriben en español; el código, los
@@ -40,7 +40,8 @@ vitest, zod. Se construye por módulos; lo que aún no existe está marcado como
   confirmación explícita. Motivo: no hay vuelta atrás limpia y es el punto de salida de una inyección.
 
 ## Flujo
-- Rama desde `main`, commits en Conventional Commits, PR pequeñas.
+- Commits en Conventional Commits. Este repo no usa pull requests (`.claude/brujula.json`): se
+  trabaja en `main` o en una rama que se fusiona en local, y se sube con `git push origin main`.
 - No dar nada por hecho sin ejecutar `npm run check` y mostrar su salida.
 - Antes de un cambio de más de dos ficheros, proponer plan y esperar confirmación.
 
