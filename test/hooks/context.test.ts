@@ -28,6 +28,35 @@ describe("session-context hook", () => {
     expect(r.stdout).toContain("Sprint 42: goal = ship RAG ingest");
   });
 
+  describe("missing Azure DevOps organization", () => {
+    const configure = "/plugin configure brujula@brujula-equipo";
+    const start = (source: string, env: Record<string, string>) =>
+      runHook(
+        "session-context.sh",
+        { hook_event_name: "SessionStart", source },
+        {
+          CLAUDE_PROJECT_DIR: mkdtempSync(join(tmpdir(), "no-repo-")),
+          CLAUDE_PLUGIN_DATA: "",
+          ...env,
+        },
+      ).stdout;
+
+    it("tells the model how the person sets it when the plugin runs without it", () => {
+      for (const source of ["startup", "clear"]) {
+        const out = start(source, { CLAUDE_PLUGIN_ROOT: "/plugin", CLAUDE_PLUGIN_OPTION_ADO_ORG: "" });
+        expect(out, source).toContain(configure);
+        expect(out, source).toContain("organization");
+      }
+    });
+
+    it("says nothing when the organization is set, or outside the plugin", () => {
+      expect(start("startup", { CLAUDE_PLUGIN_ROOT: "/plugin", CLAUDE_PLUGIN_OPTION_ADO_ORG: "x" })).not.toContain(
+        configure,
+      );
+      expect(start("startup", { CLAUDE_PLUGIN_ROOT: "", CLAUDE_PLUGIN_OPTION_ADO_ORG: "" })).not.toContain(configure);
+    });
+  });
+
   describe("first-session welcome", () => {
     const start = (source: string) => ({ hook_event_name: "SessionStart", source });
     const welcome = "brujula:bienvenida";

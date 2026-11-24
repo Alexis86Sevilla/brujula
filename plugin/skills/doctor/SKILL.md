@@ -8,10 +8,13 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs *)
 Run exactly this command (the paths are passed as arguments because commands do not inherit them):
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}"
+node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}" '--ado-org=${user_config.ado_org}'
 ```
 
 It prints a JSON array of checks `{ name, ok, detail, fix, skipped? }` and exits 1 if any check fails.
+
+If `ado-org` fails but Azure DevOps tools (`mcp__plugin_brujula_ado__*`) are available in this
+session, the organization is set and only the value did not reach the command: ignore that check.
 
 Report in Spanish, briefly:
 

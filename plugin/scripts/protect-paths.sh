@@ -14,19 +14,8 @@ block() {
   exit 2
 }
 
-# Secrets: never editable, no override.
-case "${file##*/}" in
-  .env.example) ;;
-  .env | .env.*) block "environment file with secrets" ;;
-esac
-
-# Config-like paths: editable only when the human unlocked them.
-[ "${BRUJULA_UNLOCK:-}" = "1" ] && exit 0
-case "$file" in
-  */.git/*)                block "git internals" ;;
-  */package-lock.json)     block "lockfile, changes only through npm" ;;
-  */pipelines/*)           block "CI definitions need human review" ;;
-  */.claude/hooks/*|*/plugin/scripts/*|*/plugin/hooks/*)     block "guardrails cannot edit themselves" ;;
-  */.claude/settings.json) block "guardrails cannot edit themselves" ;;
-esac
+# shellcheck source=lib/protected.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/protected.sh"
+reason=$(protected_reason "$file")
+[ -n "$reason" ] && block "$reason"
 exit 0

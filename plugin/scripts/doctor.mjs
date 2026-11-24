@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // plugin/scripts/doctor.mjs
-// Usage: node doctor.mjs <plugin-root> <plugin-data> [marketplace-url]
+// Usage: node doctor.mjs <plugin-root> <plugin-data> [marketplace-url] [--ado-org=<organization>]
 // Prints a JSON array of checks { name, ok, detail, fix, skipped? } on stdout. Exit 1 if any check fails.
 // Paths come as arguments: commands run from a skill do not inherit CLAUDE_PLUGIN_ROOT/DATA.
 import { spawnSync } from "node:child_process";
@@ -10,9 +10,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_MARKETPLACE = "https://github.com/Alexis86Sevilla/brujula.git";
-const [root, data, url = DEFAULT_MARKETPLACE] = process.argv.slice(2);
+// --ado-org carries the plugin's ado_org setting: skills pass it with ${user_config.ado_org}.
+const argv = process.argv.slice(2);
+const orgArg = argv.find((a) => a.startsWith("--ado-org="));
+const [root, data, url = DEFAULT_MARKETPLACE] = argv.filter((a) => !a.startsWith("--ado-org="));
 if (!root || !data) {
-  console.error("usage: doctor.mjs <plugin-root> <plugin-data> [marketplace-url]");
+  console.error("usage: doctor.mjs <plugin-root> <plugin-data> [marketplace-url] [--ado-org=<organization>]");
   process.exit(2);
 }
 
@@ -24,6 +27,21 @@ const skip = (name, detail) => checks.push({ name, ok: true, skipped: true, deta
 // 1. Node 22 or newer (the bundled server targets node22).
 const major = Number(process.versions.node.split(".")[0]);
 check("node-version", major >= 22, `node ${process.versions.node}`, "nvm install 22 && nvm alias default 22");
+
+// 1a. The Azure DevOps organization. Without it Claude Code drops the ado server silently, and an
+// update can clear it. An unfilled setting may arrive empty or as its literal placeholder.
+if (orgArg !== undefined) {
+  const org = orgArg.slice("--ado-org=".length);
+  const set = org !== "" && !org.startsWith("${");
+  check(
+    "ado-org",
+    set,
+    set
+      ? `Azure DevOps organization: ${org}`
+      : "the Azure DevOps organization is not set (an update can clear it), so Claude cannot reach Azure DevOps",
+    "In Claude, type /plugin configure brujula@brujula-equipo, fill in the Azure DevOps organization (the name in https://dev.azure.com/<organization>) and restart Claude",
+  );
+}
 
 // 1b. The Azure CLI is optional: the default login is the browser (userConfig ado_auth). It is only
 // reported, never failed, because the chosen method is not readable from here. The login itself is

@@ -68,6 +68,59 @@ describe("guard-bash hook", () => {
     expect(decision(cmd)).toBeUndefined();
   });
 
+  describe("writes to protected paths from the shell", () => {
+    const reason = (command: string, env: Record<string, string> = {}) => {
+      const r = runHook("guard-bash.sh", bash(command), { CLAUDE_PROJECT_DIR: prProject, ...env });
+      return r.stdout.trim() ? JSON.parse(r.stdout).hookSpecificOutput : undefined;
+    };
+
+    it.each([
+      ": > package-lock.json",
+      "echo '{}' >> ./package-lock.json",
+      "printf x>.env",
+      "echo x 1> .env.local",
+      "cat <<EOF > .env\nA=1\nEOF",
+      "touch package-lock.json",
+      "cp .env.example .env",
+      "mv draft.yml pipelines/ci.yml",
+      "cat x | tee -a package-lock.json",
+      "sudo tee .env < x",
+      "sed -i s/a/b/ .env",
+      "sed -Ei s/a/b/ .env",
+      "perl -pi -e 's/a/b/' package-lock.json",
+      "dd if=x of=package-lock.json",
+      "echo x > .git/config",
+      "npm test && echo done > C:/proj/package-lock.json",
+    ])("denies: %s", (cmd) => {
+      const out = reason(cmd);
+      expect(out?.permissionDecision).toBe("deny");
+      expect(out.permissionDecisionReason).toContain("is protected");
+    });
+
+    it.each([
+      "echo x > out.txt",
+      "ls > /dev/null 2>&1",
+      "echo hi >&2",
+      "cp package-lock.json backup.json",
+      "cp .env.example config.txt",
+      "cat package-lock.json",
+      "npm install",
+      "git commit -m 'fix > .env handling'",
+      'echo "touch .env" > notes.txt',
+      "sed -i s/foo/pipelines/g README.md",
+      "sed -i -e s#x#.git/y# README.md",
+      'git commit -m "feat: x\n> package-lock.json is left alone"',
+      "npm test\n\nls",
+    ])("lets through: %s", (cmd) => {
+      expect(reason(cmd)).toBeUndefined();
+    });
+
+    it("lets the human unlock config paths, but never secrets", () => {
+      expect(reason(": > package-lock.json", { BRUJULA_UNLOCK: "1" })).toBeUndefined();
+      expect(reason("echo A=1 > .env", { BRUJULA_UNLOCK: "1" })?.permissionDecision).toBe("deny");
+    });
+  });
+
   it("denies a command that hides a NUL character", () => {
     expect(decision("\u0000rm -rf x")).toBe("deny");
   });

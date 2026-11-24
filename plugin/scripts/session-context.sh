@@ -20,6 +20,13 @@ if [ -n "$data" ] && [ "$source" = "startup" ] && [ ! -e "$data/welcomed" ]; the
       "welcome at the end)."
   fi
 fi
+# The plugin runs without the Azure DevOps organization (an update can clear it): Claude Code then
+# drops the ado server without a word, and the person only sees that Azure DevOps does not answer.
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${CLAUDE_PLUGIN_OPTION_ADO_ORG:-}" ]; then
+  echo "The Brújula plugin has no Azure DevOps organization set, so Azure DevOps is not connected." \
+    "Tell the person, in plain Spanish and before anything else, to type /plugin configure brujula@brujula-equipo" \
+    "in this chat, fill in the organization (the name in https://dev.azure.com/<organization>) and restart Claude."
+fi
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Branch: $(git branch --show-current)"
   echo "Last commits:"

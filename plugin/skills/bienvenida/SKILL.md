@@ -21,16 +21,22 @@ always asks before changing anything in Azure Boards.
 Run, without asking:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}"
+node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}" '--ado-org=${user_config.ado_org}'
 ```
 
 It prints a JSON list of checks `{ name, ok, detail, fix, skipped? }`. Never show the JSON. Only the
 installation matters here: ignore the `pull-requests` check (a project setting that
 `/brujula:configurar` handles later). Say "Todo está bien instalado" when every other check is ok
 (a skipped check is fine; do not mention it).
+A failing `ado-org` comes first: without the organization nothing in Azure Boards works. Tell
+them to type `/plugin configure brujula@brujula-equipo` in this chat, fill in the organization (the
+name in https://dev.azure.com/<organization>) and restart Claude.
 For a failing check, explain the problem in one plain sentence and offer to fix it; if the fix is a
 command only they can run (git credentials, for example), tell them exactly what to copy and where
 (the terminal of their computer, or typed in this chat starting with `!`), one step at a time.
+
+If `ado-org` fails but Azure DevOps tools (`mcp__plugin_brujula_ado__*`) are available in this
+session, the organization is set and only the value did not reach the command: ignore that check.
 
 ## 3. What they do here
 

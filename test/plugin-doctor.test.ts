@@ -57,8 +57,9 @@ function run(
   url: string,
   projectDir = project('{ "pullRequests": true }'),
   env: Record<string, string> = {},
+  extra: string[] = [],
 ) {
-  const r = spawnSync(process.execPath, [doctor, root, data, url], {
+  const r = spawnSync(process.execPath, [doctor, root, data, url, ...extra], {
     encoding: "utf8",
     // An empty Claude config dir by default: the tests never read the real ~/.claude.
     env: {
@@ -276,6 +277,44 @@ describe("doctor.mjs", () => {
     const folder = mkdtempSync(join(tmpdir(), "pm-folder-"));
     const r = run(pluginRoot(), mkdtempSync(join(tmpdir(), "data-")), marketplace(), folder);
     expect(byName(r.checks, "pull-requests")).toMatchObject({ ok: true, skipped: true, fix: "" });
+  });
+
+  describe("ado-org", () => {
+    const withOrg = (value?: string) =>
+      run(
+        pluginRoot(),
+        mkdtempSync(join(tmpdir(), "data-")),
+        marketplace(),
+        undefined,
+        {},
+        value === undefined ? [] : [`--ado-org=${value}`],
+      );
+    const fix =
+      "In Claude, type /plugin configure brujula@brujula-equipo, fill in the Azure DevOps organization (the name in https://dev.azure.com/<organization>) and restart Claude";
+
+    it("passes when the organization is set", () => {
+      expect(byName(withOrg("contoso-brains").checks, "ado-org")).toMatchObject({
+        ok: true,
+        detail: "Azure DevOps organization: contoso-brains",
+      });
+    });
+
+    it("fails with the exact fix when the organization is empty or its placeholder was not filled", () => {
+      for (const value of ["", "${user_config.ado_org}"]) {
+        const r = withOrg(value);
+        expect(r.status, value).toBe(1);
+        expect(byName(r.checks, "ado-org"), value).toMatchObject({
+          ok: false,
+          detail:
+            "the Azure DevOps organization is not set (an update can clear it), so Claude cannot reach Azure DevOps",
+          fix,
+        });
+      }
+    });
+
+    it("is not checked when the organization is not passed", () => {
+      expect(byName(withOrg().checks, "ado-org")).toBeUndefined();
+    });
   });
 
   it("checks the Node version", () => {

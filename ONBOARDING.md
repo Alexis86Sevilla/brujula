@@ -62,6 +62,15 @@ Si `update` responde "already at the latest version" con la versión vieja, te h
 paso 1. `/brujula:doctor` lo detecta y te dice qué ejecutar. No desinstales para arreglarlo:
 no ayuda y borra tu configuración (`ado_org`).
 
+Tras actualizar, si Azure DevOps no responde (Claude dice que no tiene acceso, o `/mcp` no muestra
+`plugin:brujula:ado`): la actualización puede borrar la organización, y sin ella Claude Code no
+arranca la conexión con Azure DevOps ni avisa. Escribe en Claude:
+
+    /plugin configure brujula@brujula-equipo
+
+Rellena la organización (lo que aparece en `https://dev.azure.com/<organización>`), deja el inicio
+de sesión en `interactive` y reinicia Claude. Al arrancar, Brújula también te avisa si falta.
+
 Por qué: este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`), no a
 `main`. Los hooks y servidores MCP del plugin se ejecutan en la máquina de cada compañero, así que
 solo cambian cuando alguien publica una etiqueta nueva y sube `version` en

@@ -130,10 +130,10 @@ Corren en todos tus proyectos. Los de Node solo actúan si el proyecto tiene sus
 
 | Cuándo | Qué hace |
 |--------|----------|
-| Al abrir o retomar una sesión | Inyecta la rama, los últimos commits y tu sprint (`.claude/context/sprint.md`) |
+| Al abrir o retomar una sesión | Inyecta la rama, los últimos commits y tu sprint (`.claude/context/sprint.md`); avisa si falta la organización de Azure DevOps |
 | Al enviar un prompt | Rechaza prompts con secretos y recuerda leer los work items que menciones (`#1234`) |
 | Antes de editar | Bloquea `.env` y, salvo con `BRUJULA_UNLOCK=1`, `.git/`, `package-lock.json`, `pipelines/`, los hooks y `.claude/settings.json` |
-| Antes de un comando | Bloquea `rm -r`, `git push --force`, `git reset --hard`, saltarse hooks (`-n`, `--no-verify`), `curl … \| sh`, `chmod 777` y el push a `main` según `pullRequests` (también un `git push` sin rama estando en `main`) |
+| Antes de un comando | Bloquea `rm -r`, `git push --force`, `git reset --hard`, saltarse hooks (`-n`, `--no-verify`), `curl … \| sh`, `chmod 777` el push a `main` según `pullRequests` (también un `git push` sin rama estando en `main`) y las escrituras habituales desde la shell (`>`, `tee`, `touch`, `cp`, `mv`, `sed -i`…) en las mismas rutas que protege "Antes de editar" |
 | Antes de escribir en Azure DevOps | Te pide confirmación en cualquier repo (work items, comentarios, PR, ramas, wiki, reordenar el backlog, guardar adjuntos en disco); bloquea votar una PR y saltarse sus políticas |
 | Antes de un commit | Bloquea el commit si el diff añade un secreto (cita fichero y línea, nunca el valor) |
 | Después de editar | Formatea con prettier si el proyecto lo tiene |
