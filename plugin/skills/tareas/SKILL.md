@@ -3,10 +3,15 @@ name: tareas
 description: Break down an existing Product Backlog Item in Azure Boards into child Tasks, proposed from its acceptance criteria (Hecho cuando) and steps (Cómo), and create them only after explicit user confirmation. Use when a tech lead runs /brujula:tareas with a PBI id, usually during sprint planning.
 disable-model-invocation: true
 argument-hint: "<pbi-id> [project]"
+allowed-tools: Bash(bash *project-config.sh*)
 ---
 
+## Project settings
+
+!`bash "${CLAUDE_SKILL_DIR}/../../scripts/lib/project-config.sh"`
+
 Break down into Tasks the PBI given as first argument, in the project given as second argument.
-Arguments: $ARGUMENTS (if there is no project, use the one named in the conversation, else `MyProject`).
+Arguments: $ARGUMENTS (project: if empty, use the project the user named in the conversation, else `adoProject` from the project settings above; if there is none, ask once which Azure DevOps project to use).
 
 Talk to the user in Spanish. Work in these steps and do not skip any:
 

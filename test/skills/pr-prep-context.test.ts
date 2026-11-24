@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { scriptsDir } from "../hooks/helpers.js";
 
 const script = resolve("plugin/skills/pr-prep/scripts/context.sh");
 let repo: string;
@@ -11,7 +12,12 @@ function git(...args: string[]): string {
   return execFileSync("git", args, { cwd: repo, encoding: "utf8" });
 }
 function run(): string {
-  return execFileSync("bash", [script], { cwd: repo, encoding: "utf8" });
+  // BRUJULA_SCRIPTS_DIR: the scripts (and lib/) the context script uses, drafts included.
+  return execFileSync("bash", [script], {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, BRUJULA_SCRIPTS_DIR: scriptsDir },
+  });
 }
 
 beforeEach(() => {
@@ -58,6 +64,16 @@ describe("pr-prep context.sh", () => {
     const out = run();
     expect(out).toContain("## branch diff stat");
     expect(out.match(/chore: step/g)).toHaveLength(30);
+  });
+
+  it("uses the project's baseBranch and shows its Azure DevOps project", () => {
+    git("branch", "develop");
+    git("switch", "-qc", "feature/9-x");
+    mkdirSync(join(repo, ".claude"));
+    writeFileSync(join(repo, ".claude/brujula.local.json"), '{ "baseBranch": "develop", "adoProject": "Fabrikam" }');
+    const out = run();
+    expect(out).toContain("base: develop");
+    expect(out).toContain("ado-project: Fabrikam");
   });
 
   it("reports work-item none and still works on the base branch", () => {

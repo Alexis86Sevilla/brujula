@@ -4,12 +4,21 @@
 set -euo pipefail
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
+root="$(git rev-parse --show-toplevel)"
+
+# Project settings (.claude/brujula.json + personal .claude/brujula.local.json). BRUJULA_SCRIPTS_DIR
+# lets the tests point at another copy of the plugin scripts.
+# shellcheck source=../../../scripts/lib/project-config.sh
+source "${BRUJULA_SCRIPTS_DIR:-$(dirname "$0")/../../../scripts}/lib/project-config.sh"
+pull_requests="$(pull_requests_setting "$root")"
+base_branch="$(project_setting "$root" baseBranch)"
+ado_project="$(project_setting "$root" adoProject)"
 
 # origin/HEAD is a symbolic ref: resolve it to a real branch name such as origin/main.
 default_remote="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"
 
 base=""
-for candidate in $default_remote origin/main origin/master main master; do
+for candidate in ${base_branch:+"origin/$base_branch" "$base_branch"} $default_remote origin/main origin/master main master; do
   if git rev-parse --verify --quiet "$candidate" >/dev/null; then
     base="$candidate"
     break
@@ -22,15 +31,11 @@ if [[ "$branch" =~ (^|/)([0-9]{2,})[-_] ]]; then
   work_item="${BASH_REMATCH[2]}"
 fi
 
-# Whether the project uses pull requests: true | false | unset | invalid (.claude/brujula.json).
-# shellcheck source=../../../scripts/lib/project-config.sh
-source "$(dirname "$0")/../../../scripts/lib/project-config.sh"
-pull_requests="$(pull_requests_setting "$(git rev-parse --show-toplevel)")"
-
 echo "branch: $branch"
 echo "base: ${base:-none}"
 echo "work-item: $work_item"
 echo "pull-requests: $pull_requests"
+echo "ado-project: ${ado_project:-none}"
 echo
 echo "## status"
 # No "| head" under pipefail: git would die of SIGPIPE (141) and stop the script.

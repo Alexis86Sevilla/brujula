@@ -3,10 +3,15 @@ name: tarjeta-a-boards
 description: Publish an approved card (markdown file) to Azure Boards as a Product Backlog Item, after validating it and getting explicit user confirmation. Use when the user runs /brujula:tarjeta-a-boards with a card file path.
 disable-model-invocation: true
 argument-hint: "<path-to-card.md> [project]"
+allowed-tools: Bash(bash *project-config.sh*)
 ---
 
+## Project settings
+
+!`bash "${CLAUDE_SKILL_DIR}/../../scripts/lib/project-config.sh"`
+
 Publish the card at the first argument to Azure Boards in the project given as second argument
-(default: `MyProject`). Arguments: $ARGUMENTS
+(if empty, use the project the user named in the conversation, else `adoProject` from the project settings above; if there is none, ask once which Azure DevOps project to use). Arguments: $ARGUMENTS
 
 Talk to the user in Spanish.
 

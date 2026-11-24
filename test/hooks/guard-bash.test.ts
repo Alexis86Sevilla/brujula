@@ -108,7 +108,7 @@ describe("guard-bash hook", () => {
       for (const bad of ['{ "pullRequests": "no" }', "not json"]) {
         const out = push(project(bad));
         expect(out.permissionDecision).toBe("deny");
-        expect(out.permissionDecisionReason).toContain(".claude/brujula.json is invalid");
+        expect(out.permissionDecisionReason).toContain("The project settings are invalid (.claude/brujula.json");
       }
     });
 

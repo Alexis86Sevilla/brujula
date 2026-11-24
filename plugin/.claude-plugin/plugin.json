@@ -1,7 +1,7 @@
 {
   "name": "brujula",
   "displayName": "Brújula",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Asistente de equipo: tarjetas bien definidas, backlog y publicación en Azure Boards, y revisión de código.",
   "author": {
     "name": "Equipo Brújula"

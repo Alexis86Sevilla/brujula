@@ -3,10 +3,15 @@ name: publicar
 description: Publish the Feature and the approved cards drafted in this conversation (by the backlog skill) to Azure Boards, after validating them and getting explicit user confirmation. Use when the user runs /brujula:publicar.
 disable-model-invocation: true
 argument-hint: "[project]"
+allowed-tools: Bash(bash *project-config.sh*)
 ---
 
+## Project settings
+
+!`bash "${CLAUDE_SKILL_DIR}/../../scripts/lib/project-config.sh"`
+
 Publish to Azure Boards the Feature and the cards the user approved earlier in this conversation.
-Project: $ARGUMENTS (if empty, use the project the user named in the conversation, else `MyProject`).
+Project: $ARGUMENTS (if empty, use the project the user named in the conversation, else `adoProject` from the project settings above; if there is none, ask once which Azure DevOps project to use).
 
 Talk to the user in Spanish. Work in these steps and do not skip any:
 

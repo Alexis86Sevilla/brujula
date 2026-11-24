@@ -1,6 +1,6 @@
 ---
 name: pr-prep
-description: Prepares a Conventional Commit message for the current branch from its diff, linking the Azure Boards work item, plus a pull request description when the project uses pull requests or the local merge commands when it does not. Run it yourself with /brujula:pr-prep before committing, opening a pull request or merging.
+description: Prepares a Conventional Commit message for the current branch from its diff, linking the Azure Boards work item, plus a pull request description - and, after confirmation, the draft pull request linked to the work item - when the project uses pull requests, or the local merge commands when it does not. Run it yourself with /brujula:pr-prep before committing, opening a pull request or merging.
 argument-hint: [work-item-id]
 arguments: [item]
 disable-model-invocation: true
@@ -17,9 +17,9 @@ Work item: use "$item" if it is not empty, otherwise the `work-item:` line above
 If there is none, ask for it once.
 
 Pull requests: read the `pull-requests:` line above. If it is `unset` or `invalid`, ask once
-"¿Este proyecto usa pull requests?", offer to write `.claude/brujula.json` with
-`{ "pullRequests": true }` or `{ "pullRequests": false }` (the team shares it, so it goes in git),
-and continue with the answer.
+"¿Este proyecto usa pull requests?", offer to save the answer with `/brujula:configurar` (personal
+`.claude/brujula.local.json`, nothing changes in the repository) or in `.claude/brujula.json` (shared
+with the team, versioned), and continue with the answer.
 
 1. Read the changes: `git diff --cached` if something is staged, otherwise `git diff <base>...HEAD`
    with the base shown above. Open only the files you need to understand the intent.
@@ -39,3 +39,12 @@ and continue with the answer.
    `git push origin <base>`; with pull requests, propose first moving the work to a new branch
    (`git switch -c <type>/<id>-<slug>`), because the push to the base is blocked.
 4. Do not run `git commit`, `git merge` or `git push`. End by asking which proposal I want to use.
+5. Only when the project uses pull requests, and after I say the branch is pushed: offer to create
+   the pull request as a draft linked to the work item. Show the exact payload of
+   `repo_pull_request_write` with action `create` as a table: `project` (the `ado-project:` line
+   above, else ask), `repositoryId` (the repository name from the origin URL), `sourceRefName`
+   `refs/heads/<branch>`, `targetRefName` `refs/heads/<base>` (without `origin/`), `title` (the
+   commit subject), `description` (the text above), `isDraft` true, `workItems` the id. Ask
+   "¿Creo la pull request? (sí/no)" and call the tool once only after "sí"; then print its URL.
+   Never set `autoComplete` or `bypassPolicy` and never vote: completing the pull request goes
+   through the team's policy.

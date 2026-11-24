@@ -3,10 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { scriptsDir } from "./hooks/helpers.js";
 
-const doctor = join(import.meta.dirname, "../plugin/scripts/doctor.mjs");
+const doctor = join(scriptsDir, "doctor.mjs");
 
-type Check = { name: string; ok: boolean; detail: string; fix: string };
+type Check = { name: string; ok: boolean; detail: string; fix: string; skipped?: boolean };
 
 /** A plugin root whose runtime manifest declares one native dependency. */
 function pluginRoot() {
@@ -49,10 +50,16 @@ function project(config?: string) {
   return dir;
 }
 
-function run(root: string, data: string, url: string, projectDir = project('{ "pullRequests": true }')) {
+function run(
+  root: string,
+  data: string,
+  url: string,
+  projectDir = project('{ "pullRequests": true }'),
+  env: Record<string, string> = {},
+) {
   const r = spawnSync(process.execPath, [doctor, root, data, url], {
     encoding: "utf8",
-    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir, ...env },
   });
   return { status: r.status, checks: JSON.parse(r.stdout) as Check[] };
 }
@@ -90,6 +97,40 @@ describe("doctor.mjs", () => {
     expect(git?.fix).toContain(`GIT_TERMINAL_PROMPT=0 git ls-remote "${missing}" HEAD`);
   });
 
+  it("skips the marketplace check, without failing, when git cannot reach the credential helper (Claude Code's sandbox)", () => {
+    const root = pluginRoot();
+    const data = mkdtempSync(join(tmpdir(), "data-"));
+    const bin = mkdtempSync(join(tmpdir(), "fake-git-"));
+    // What git prints inside the sandbox on WSL: the Windows credential manager is out of reach.
+    writeFileSync(
+      join(bin, "git"),
+      "#!/bin/sh\n" +
+        "echo '<3>WSL (14 - ) ERROR: UtilBindVsockAnyPort:309: socket failed 1' >&2\n" +
+        "echo \"fatal: could not read Password for 'https://x@dev.azure.com/o/p/_git/r': No such device or address\" >&2\n" +
+        "exit 128\n",
+      { mode: 0o755 },
+    );
+    const url = "https://dev.azure.com/o/p/_git/r";
+    const r = run(root, data, url, project('{ "pullRequests": true }'), { PATH: `${bin}:${process.env.PATH}` });
+    const git = byName(r.checks, "marketplace-git");
+    expect(git).toMatchObject({ ok: true, skipped: true, fix: "" });
+    expect(git?.detail).toContain("cannot be checked from inside Claude Code's sandbox");
+    expect(git?.detail).toContain(`GIT_TERMINAL_PROMPT=0 git ls-remote "${url}" HEAD`);
+    for (const d of [root, data, bin]) rmSync(d, { recursive: true, force: true });
+  });
+
+  it("reads the personal .claude/brujula.local.json too", () => {
+    const root = pluginRoot();
+    const data = mkdtempSync(join(tmpdir(), "data-"));
+    const dir = project();
+    mkdirSync(join(dir, ".claude"));
+    writeFileSync(join(dir, ".claude/brujula.local.json"), '{ "pullRequests": false }');
+    expect(byName(run(root, data, marketplace(), dir).checks, "pull-requests")).toMatchObject({
+      ok: true,
+      detail: "this project does not use pull requests: pushing to main is allowed",
+    });
+  });
+
   it("reports whether the project uses pull requests and how to declare it when unset", () => {
     const root = pluginRoot();
     const data = mkdtempSync(join(tmpdir(), "data-"));
@@ -103,11 +144,10 @@ describe("doctor.mjs", () => {
     const r = run(root, data, url, unset);
     expect(byName(r.checks, "pull-requests")).toMatchObject({
       ok: false,
-      detail: `not declared in ${join(unset, ".claude/brujula.json")}`,
+      detail: `not declared in .claude/brujula.json or .claude/brujula.local.json of ${unset}`,
     });
-    expect(byName(r.checks, "pull-requests")?.fix).toBe(
-      `mkdir -p .claude && echo '{ "pullRequests": true }' > .claude/brujula.json   # or false if this project does not use pull requests`,
-    );
+    expect(byName(r.checks, "pull-requests")?.fix).toContain("/brujula:configurar");
+    expect(byName(r.checks, "pull-requests")?.fix).toContain(".claude/brujula.local.json");
     expect(r.status).not.toBe(0);
     for (const d of [root, data, url, without, unset]) rmSync(d, { recursive: true, force: true });
   });

@@ -11,11 +11,13 @@ Run exactly this command (the paths are passed as arguments because commands do 
 node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}"
 ```
 
-It prints a JSON array of checks `{ name, ok, detail, fix }` and exits 1 if any check fails.
+It prints a JSON array of checks `{ name, ok, detail, fix, skipped? }` and exits 1 if any check fails.
 
 Report in Spanish, briefly:
 
-1. One line per check: ✅ or ❌, the `name` and its `detail`.
+1. One line per check: ✅ (ok), ❌ (not ok) or ⚠️ (`skipped`: this environment cannot run it,
+   it is not a failure), the `name` and its `detail`. For a skipped check, copy the command in
+   its `detail` in a code block: the user runs it in a normal terminal.
 2. For each failing check, the `fix` command in a code block, copied verbatim.
 3. If every check passes, say so in one line.
 

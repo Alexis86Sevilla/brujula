@@ -11,8 +11,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { scriptsDir } from "./hooks/helpers.js";
 
 const root = join(import.meta.dirname, "..");
 const plugin = join(root, "plugin");
@@ -27,11 +28,14 @@ const HOOKS = [
   "secret-scan.sh",
   "format-file.sh",
   "quality-gate.sh",
+  "confirm-ado-write.sh",
   "notify.sh",
 ];
 const SKILLS = [
   "backlog",
+  "configurar",
   "doctor",
+  "empezar",
   "explica-modulo",
   "pr-prep",
   "publicar",
@@ -140,7 +144,8 @@ describe("plugin components", () => {
 });
 
 describe("plugin hooks", () => {
-  const hooks = readJson(join(plugin, "hooks/hooks.json"));
+  // BRUJULA_TEST_HOOKS points at a draft hooks.json (plugin/hooks is protected from the agent).
+  const hooks = readJson(resolve(process.env.BRUJULA_TEST_HOOKS ?? join(plugin, "hooks/hooks.json")));
   const commands = hookCommands(hooks);
 
   it("wraps events in a 'hooks' key and wires every hook through run-hook.sh", () => {
@@ -152,7 +157,7 @@ describe("plugin hooks", () => {
 
   it("every wired script exists and is executable", () => {
     for (const path of ["run-hook.sh", ...commands.map((c) => c.split(" ").pop() ?? "")]) {
-      const file = join(plugin, "scripts", path);
+      const file = join(scriptsDir, path);
       expect(existsSync(file), `${file} exists`).toBe(true);
       expect(statSync(file).mode & 0o111, `${file} is executable`).not.toBe(0);
     }
@@ -161,7 +166,7 @@ describe("plugin hooks", () => {
   it("run-hook.sh runs generic hooks anywhere and honours BRUJULA_HOOKS_OFF", () => {
     const project = mkdtempSync(join(tmpdir(), "not-brujula-")); // no package.json, no node_modules
     const run = (script: string, env: Record<string, string> = {}) =>
-      spawnSync(join(plugin, "scripts/run-hook.sh"), [script], {
+      spawnSync(join(scriptsDir, "run-hook.sh"), [script], {
         input: JSON.stringify({
           hook_event_name: "PreToolUse",
           tool_name: "Bash",
@@ -174,9 +179,33 @@ describe("plugin hooks", () => {
     expect(run("guard-bash.sh", { BRUJULA_HOOKS_OFF: "1" })).toMatchObject({ status: 0, stdout: "" });
   });
 
+  it("records the quality gate's starting point on every user prompt", () => {
+    const prompt = (hooks.hooks.UserPromptSubmit ?? []) as { hooks: { command: string }[] }[];
+    expect(prompt.some((e) => e.hooks.some((h) => h.command.endsWith(" quality-gate.sh")))).toBe(true);
+  });
+
+  it("asks before any write of the ado MCP server, through a PreToolUse matcher", () => {
+    const pre = (hooks.hooks.PreToolUse ?? []) as { matcher: string; hooks: { command: string }[] }[];
+    const entry = pre.find((e) => e.hooks.some((h) => h.command.endsWith(" confirm-ado-write.sh")));
+    expect(entry?.matcher).toBe("mcp__plugin_brujula_ado__.*");
+  });
+
+  it("BRUJULA_HOOKS_OFF never disables the Azure DevOps write confirmation", () => {
+    const r = spawnSync(join(scriptsDir, "run-hook.sh"), ["confirm-ado-write.sh"], {
+      input: JSON.stringify({
+        hook_event_name: "PreToolUse",
+        tool_name: "mcp__plugin_brujula_ado__wit_work_item_write",
+        tool_input: { action: "create" },
+      }),
+      encoding: "utf8",
+      env: { ...process.env, BRUJULA_HOOKS_OFF: "1" },
+    });
+    expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe("ask");
+  });
+
   it("BRUJULA_HOOKS_OFF never disables the .env guard", () => {
     const project = mkdtempSync(join(tmpdir(), "hooks-off-"));
-    const r = spawnSync(join(plugin, "scripts/run-hook.sh"), ["protect-paths.sh"], {
+    const r = spawnSync(join(scriptsDir, "run-hook.sh"), ["protect-paths.sh"], {
       input: JSON.stringify({
         hook_event_name: "PreToolUse",
         tool_name: "Edit",
@@ -191,7 +220,7 @@ describe("plugin hooks", () => {
   it("run-hook.sh skips the Node-stack hooks in a project without those tools", () => {
     const project = mkdtempSync(join(tmpdir(), "not-node-"));
     for (const script of ["format-file.sh", "quality-gate.sh"]) {
-      const r = spawnSync(join(plugin, "scripts/run-hook.sh"), [script], {
+      const r = spawnSync(join(scriptsDir, "run-hook.sh"), [script], {
         input: JSON.stringify({ hook_event_name: "Stop", tool_input: { file_path: join(project, "a.ts") } }),
         encoding: "utf8",
         env: { ...process.env, CLAUDE_PROJECT_DIR: project },
@@ -200,6 +229,10 @@ describe("plugin hooks", () => {
     }
   });
 });
+
+/** The environment of this test run without the user's BRUJULA_* switches (e.g. BRUJULA_GATE_OFF=1 claude). */
+const withoutBrujulaVars = () =>
+  Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("BRUJULA_")));
 
 describe("quality-gate in a Node project", () => {
   // A project with package.json, tsc and vitest, whose tsc fails the way it does without a tsconfig.json.
@@ -216,10 +249,10 @@ describe("quality-gate in a Node project", () => {
     return project;
   }
   const gate = (project: string) =>
-    spawnSync(join(plugin, "scripts/run-hook.sh"), ["quality-gate.sh"], {
+    spawnSync(join(scriptsDir, "run-hook.sh"), ["quality-gate.sh"], {
       input: JSON.stringify({ hook_event_name: "Stop" }),
       encoding: "utf8",
-      env: { ...process.env, CLAUDE_PROJECT_DIR: project, BRUJULA_GATE_FORCE: "1" },
+      env: { ...withoutBrujulaVars(), CLAUDE_PROJECT_DIR: project, BRUJULA_GATE_FORCE: "1" },
     });
 
   it("does not run where the project has no root tsconfig.json (a monorepo, say)", () => {

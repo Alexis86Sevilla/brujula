@@ -33,8 +33,8 @@ if [[ $cmd =~ $push_main ]]; then
   case "$(pull_requests_setting "${CLAUDE_PROJECT_DIR:-.}")" in
     false) ;;
     true) deny "Direct push to main/master is blocked: this project uses pull requests. Push a feature branch and open a pull request." ;;
-    unset) deny 'Direct push to main/master is blocked until the project says how it integrates changes. Ask the user once whether this project uses pull requests, then write .claude/brujula.json with {"pullRequests": true} or {"pullRequests": false} and retry.' ;;
-    *) deny '.claude/brujula.json is invalid: it must be a JSON object like {"pullRequests": true} or {"pullRequests": false}. Fix it, then retry.' ;;
+    unset) deny 'Direct push to main/master is blocked until the project says how it integrates changes. Ask the user once whether this project uses pull requests, then write .claude/brujula.json with {"pullRequests": true} or {"pullRequests": false} (shared with the team, versioned) or the same in .claude/brujula.local.json (personal, never versioned: the choice in a repo that is not yours) and retry.' ;;
+    *) deny 'The project settings are invalid (.claude/brujula.json or .claude/brujula.local.json): each must be a JSON object like {"pullRequests": true}. Fix it, then retry.' ;;
   esac
 fi
 check 'git[[:space:]]+reset[[:space:]]+--hard' \

@@ -95,7 +95,7 @@
       "source": {
         "source": "git",
         "url": "https://github.com/Alexis86Sevilla/brujula.git",
-        "ref": "v0.3.1"
+        "ref": "v0.4.0"
       }
     }
   },

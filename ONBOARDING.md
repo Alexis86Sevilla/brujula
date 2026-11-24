@@ -35,8 +35,8 @@ Ejecuta `/mcp`: `plugin:brujula:brujula` y `plugin:brujula:ado` deben aparecer c
 En una sesión de `claude`:
 
 - `/plugin` lista `brujula@brujula-equipo` como habilitado.
-- `/brujula:` muestra las skills (backlog, doctor, explica-modulo, pr-prep, publicar,
-  sprint-sync, tareas, tarjeta, tarjeta-a-boards).
+- `/brujula:` muestra las skills (backlog, configurar, doctor, empezar, explica-modulo, pr-prep,
+  publicar, sprint-sync, tareas, tarjeta, tarjeta-a-boards).
 - Pregunta: "Usa brujula_conventions y dime qué reglas devuelve". Debe llamar a la herramienta.
 - `/brujula:doctor` termina con todas las comprobaciones en verde.
 
@@ -55,16 +55,17 @@ compañero, así que solo cambian cuando alguien publica una etiqueta nueva y ac
 ## Primeros pasos
 
 1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
-2. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` (la valida sola) y pide al agente
+2. En cada repo donde trabajes, `/brujula:configurar` una vez: no cambia nada versionado.
+3. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` (la valida sola) y pide al agente
    `refinador` que la juzgue. La guía completa de uso está en `docs/USO.md`.
 
 ## Consejos
 
 - Tras instalar o actualizar el plugin, ejecuta `/reload-plugins` o abre un `claude` nuevo (no `--resume`).
-- Cada proyecto declara si usa pull requests en `.claude/brujula.json` (`{ "pullRequests": true }`
-  o `false`), versionado en el repo. Con `true` el plugin bloquea el push directo a `main` y
-  `/brujula:pr-prep` redacta la descripción de la PR; con `false` permite el push y propone el
-  merge local. Si falta, Claude te lo pregunta la primera vez y `/brujula:doctor` lo avisa.
+- Cada proyecto declara si usa pull requests, su rama base, su comando de tests y su proyecto de
+  Azure DevOps: en `.claude/brujula.json` (versionado, lo decide el equipo) o en
+  `.claude/brujula.local.json` (tuyo, nunca versionado). `/brujula:configurar` lo hace por ti.
+  Detalles en `docs/USO.md`.
 - Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Los bloqueos de `.env` y de
   secretos siguen activos.
 - Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.
