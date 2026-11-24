@@ -3,9 +3,23 @@
 # Keeps the model oriented after /clear and after compaction.
 set -u
 
+input=$(cat)
+
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
 echo "## Session context (injected by the brujula plugin session-context.sh)"
+
+# First new session of this person with Brújula: let Claude guide them (many users do not use a
+# terminal). The marker lives in the plugin data folder, which survives updates.
+data="${CLAUDE_PLUGIN_DATA:-}"
+source=$(printf '%s' "$input" | jq -r '.source // empty' 2>/dev/null)
+if [ -n "$data" ] && [ "$source" = "startup" ] && [ ! -e "$data/welcomed" ]; then
+  if mkdir -p "$data" 2>/dev/null && : >"$data/welcomed" 2>/dev/null; then
+    echo "First session of this person with Brújula: before anything else, use the brujula:bienvenida skill" \
+      "to welcome them, unless their first message is already a concrete task (then do it, and offer the" \
+      "welcome at the end)."
+  fi
+fi
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Branch: $(git branch --show-current)"
   echo "Last commits:"

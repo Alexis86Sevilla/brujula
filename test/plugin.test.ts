@@ -33,6 +33,7 @@ const HOOKS = [
 ];
 const SKILLS = [
   "backlog",
+  "bienvenida",
   "configurar",
   "doctor",
   "empezar",

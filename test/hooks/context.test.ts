@@ -28,6 +28,39 @@ describe("session-context hook", () => {
     expect(r.stdout).toContain("Sprint 42: goal = ship RAG ingest");
   });
 
+  describe("first-session welcome", () => {
+    const start = (source: string) => ({ hook_event_name: "SessionStart", source });
+    const welcome = "brujula:bienvenida";
+
+    it("asks the model to welcome the person on their first session only, even outside a repository", () => {
+      const data = mkdtempSync(join(tmpdir(), "plugin-data-"));
+      const env = { CLAUDE_PROJECT_DIR: mkdtempSync(join(tmpdir(), "no-repo-")), CLAUDE_PLUGIN_DATA: data };
+      const first = runHook("session-context.sh", start("startup"), env);
+      expect(first.code).toBe(0);
+      expect(first.stdout).toContain(welcome);
+      expect(runHook("session-context.sh", start("startup"), env).stdout).not.toContain(welcome);
+    });
+
+    it("waits for a new session: a resume, a clear or a compaction does not use up the welcome", () => {
+      const env = {
+        CLAUDE_PROJECT_DIR: fakeProject(),
+        CLAUDE_PLUGIN_DATA: mkdtempSync(join(tmpdir(), "plugin-data-")),
+      };
+      for (const source of ["resume", "clear", "compact"]) {
+        expect(runHook("session-context.sh", start(source), env).stdout, source).not.toContain(welcome);
+      }
+      expect(runHook("session-context.sh", start("startup"), env).stdout).toContain(welcome);
+    });
+
+    it("stays silent when there is no plugin data folder to remember it", () => {
+      const r = runHook("session-context.sh", start("startup"), {
+        CLAUDE_PROJECT_DIR: fakeProject(),
+        CLAUDE_PLUGIN_DATA: "",
+      });
+      expect(r.stdout).not.toContain(welcome);
+    });
+  });
+
   it("works without a sprint file", () => {
     const dir = fakeProject();
     const r = runHook("session-context.sh", { hook_event_name: "SessionStart" }, { CLAUDE_PROJECT_DIR: dir });

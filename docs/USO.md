@@ -8,6 +8,7 @@ Para instalarlo, ve antes a [ONBOARDING.md](../ONBOARDING.md).
 
 | Quiero… | Usa | Cómo |
 |---------|-----|------|
+| Empezar con Brújula: qué hace y qué probar primero | skill `bienvenida` | sale sola la primera vez; luego "ayúdame a empezar con Brújula" |
 | Preparar un repo (también ajeno) sin tocarlo | skill `configurar` | `/brujula:configurar` |
 | Empezar una tarjeta: huecos, rama, tests de partida y plan | skill `empezar` | `/brujula:empezar <id>` |
 | Convertir una idea en **una** tarjeta | skill `tarjeta` | `/brujula:tarjeta <idea>` o "crea una tarjeta para…" |

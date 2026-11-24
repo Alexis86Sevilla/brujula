@@ -35,7 +35,7 @@ Ejecuta `/mcp`: `plugin:brujula:brujula` y `plugin:brujula:ado` deben aparecer c
 En una sesión de `claude`:
 
 - `/plugin` lista `brujula@brujula-equipo` como habilitado.
-- `/brujula:` muestra las skills (backlog, configurar, doctor, empezar, explica-modulo, pr-prep,
+- `/brujula:` muestra las skills (backlog, bienvenida, configurar, doctor, empezar, explica-modulo, pr-prep,
   publicar, sprint-sync, tareas, tarjeta, tarjeta-a-boards).
 - Pregunta: "Usa brujula_conventions y dime qué reglas devuelve". Debe llamar a la herramienta.
 - `/brujula:doctor` termina con todas las comprobaciones en verde.
@@ -54,10 +54,11 @@ compañero, así que solo cambian cuando alguien publica una etiqueta nueva y ac
 
 ## Primeros pasos
 
-1. `/brujula:doctor` hasta que todas las comprobaciones salgan en verde.
-2. En cada repo donde trabajes, `/brujula:configurar` una vez: no cambia nada versionado.
-3. Convierte una idea pequeña en tarjeta con `/brujula:tarjeta` (la valida sola) y pide al agente
-   `refinador` que la juzgue. La guía completa de uso está en `docs/USO.md`.
+Abre `claude` y sigue lo que te diga: la primera vez, Claude te da la bienvenida, comprueba él
+mismo que todo está bien instalado, te pregunta qué haces en ese proyecto y te propone una primera
+cosa que probar. Para verlo otra vez, escríbele "ayúdame a empezar con Brújula".
+
+La guía completa de uso está en `docs/USO.md`.
 
 ## Consejos
 
