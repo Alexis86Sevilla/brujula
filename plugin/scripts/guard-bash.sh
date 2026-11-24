@@ -4,12 +4,12 @@
 # This catches honest mistakes, not an adversary: the sandbox is the hard barrier.
 set -u
 
-input=$(cat)
-cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+IFS= read -r -d '' cmd < <(node "$json" get tool_input.command)
 [ -z "$cmd" ] && exit 0
 
 deny() {
-  jq -n --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
+  node "$json" decision deny "$1"
   exit 0
 }
 

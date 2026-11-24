@@ -68,6 +68,10 @@ describe("guard-bash hook", () => {
     expect(decision(cmd)).toBeUndefined();
   });
 
+  it("denies a command that hides a NUL character", () => {
+    expect(decision("\u0000rm -rf x")).toBe("deny");
+  });
+
   describe("push to main follows the project's pull request setting", () => {
     const dirs: string[] = [];
     afterEach(() => dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true })));

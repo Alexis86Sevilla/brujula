@@ -3,7 +3,8 @@
 # Keeps the model oriented after /clear and after compaction.
 set -u
 
-input=$(cat)
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+IFS= read -r -d '' source < <(node "$json" get source 2>/dev/null)
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
@@ -12,7 +13,6 @@ echo "## Session context (injected by the brujula plugin session-context.sh)"
 # First new session of this person with Brújula: let Claude guide them (many users do not use a
 # terminal). The marker lives in the plugin data folder, which survives updates.
 data="${CLAUDE_PLUGIN_DATA:-}"
-source=$(printf '%s' "$input" | jq -r '.source // empty' 2>/dev/null)
 if [ -n "$data" ] && [ "$source" = "startup" ] && [ ! -e "$data/welcomed" ]; then
   if mkdir -p "$data" 2>/dev/null && : >"$data/welcomed" 2>/dev/null; then
     echo "First session of this person with Brújula: before anything else, use the brujula:bienvenida skill" \

@@ -25,21 +25,17 @@ const skip = (name, detail) => checks.push({ name, ok: true, skipped: true, deta
 const major = Number(process.versions.node.split(".")[0]);
 check("node-version", major >= 22, `node ${process.versions.node}`, "nvm install 22 && nvm alias default 22");
 
-// 1b. Tools the plugin needs. Without jq every hook guard (.env files, secrets, dangerous commands)
-// switches off silently; Azure DevOps access goes through the Azure CLI login. The login itself is
-// not checked: inside Claude Code's sandbox az cannot read ~/.azure and always says to log in.
+// 1b. The Azure CLI is optional: the default login is the browser (userConfig ado_auth). It is only
+// reported, never failed, because the chosen method is not readable from here. The login itself is
+// not checked either: inside Claude Code's sandbox az cannot read ~/.azure and always says to log in.
 const onPath = (tool) => spawnSync("bash", ["-c", `command -v ${tool}`], { encoding: "utf8" }).status === 0;
 check(
-  "jq",
-  onPath("jq"),
-  onPath("jq") ? "jq is installed" : "jq is not installed: the plugin's safety guards do not work without it",
-  "sudo apt install jq",
-);
-check(
   "azure-cli",
-  onPath("az"),
-  onPath("az") ? "Azure CLI is installed" : "Azure CLI (az) is not installed: Azure DevOps cannot be reached",
-  "install it following https://learn.microsoft.com/cli/azure/install-azure-cli-linux and then run: az login",
+  true,
+  onPath("az")
+    ? "Azure CLI installed (used by the azcli login)"
+    : "Azure CLI not installed: not needed with the browser login (the default); only if you chose azcli, install it and run az login (https://learn.microsoft.com/cli/azure/install-azure-cli)",
+  "",
 );
 
 // 2. The marketplace can be cloned without prompts (that is how Claude Code runs git).

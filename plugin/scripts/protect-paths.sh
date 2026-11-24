@@ -4,8 +4,8 @@
 # Human override for config-like paths: BRUJULA_UNLOCK=1 claude
 set -u
 
-input=$(cat)
-file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+IFS= read -r -d '' file < <(node "$json" get tool_input.file_path)
 [ -z "$file" ] && exit 0
 file=${file//\\//}   # normalise Windows separators
 

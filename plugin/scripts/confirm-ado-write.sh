@@ -5,25 +5,29 @@
 # Style: exit 0 + JSON decision (the reason is shown to the model and to the user).
 set -u
 
-input=$(cat)
-# Without jq nothing can be inspected: fail closed. Claude Code only calls this hook for the ado
-# server's tools (hooks.json matcher), so asking is right.
-if ! command -v jq >/dev/null 2>&1; then
-  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"jq is missing, so this Azure DevOps call cannot be checked: read it before approving."}}'
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+# When the input cannot be inspected (node missing or failing), fail closed. Claude Code only calls
+# this hook for the ado server's tools (hooks.json matcher), so asking is right.
+unchecked() {
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"node is missing or failed, so this Azure DevOps call cannot be checked: read it before approving."}}'
   exit 0
-fi
-tool=$(printf '%s' "$input" | jq -r '.tool_name // empty')
+}
+command -v node >/dev/null 2>&1 || unchecked
+# One node call for every field this hook reads. It prints exactly four NUL-terminated fields;
+# anything else means it failed.
+fields=()
+mapfile -d '' -t fields < <(node "$json" get tool_name tool_input.action tool_input.savePath tool_input.bypassPolicy=false 2>/dev/null)
+[ "${#fields[@]}" -eq 4 ] || unchecked
+tool="${fields[0]}" action="${fields[1]}" save_path="${fields[2]}" bypass_policy="${fields[3]}"
 prefix="mcp__plugin_brujula_ado__"
 [[ "$tool" == "$prefix"* ]] || exit 0
 name="${tool#"$prefix"}"
 
 decide() {   # decide <ask|deny> <reason>
-  jq -n --arg d "$1" --arg r "$2" \
-    '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: $d, permissionDecisionReason: $r}}'
+  node "$json" decision "$1" "$2" 2>/dev/null || unchecked
   exit 0
 }
 
-action=$(printf '%s' "$input" | jq -r '.tool_input.action // empty')
 # Known read-only tools (checked against @azure-devops/mcp 2.11.0, the version in plugin/.mcp.json).
 # Anything else, including tools added in a future server version, asks.
 case "$name" in
@@ -34,10 +38,10 @@ case "$name" in
   # wit_backlog can also "reorder" (a write); the attachment tool writes to disk with savePath.
   wit_backlog) [[ "$action" == "list" || "$action" == "list_work_items" ]] && exit 0 ;;
   wit_work_item_attachment)
-    [[ "$(printf '%s' "$input" | jq -r '.tool_input.savePath // empty')" == "" ]] && exit 0 ;;
+    [[ "$save_path" == "" ]] && exit 0 ;;
 esac
 
-if [[ "$(printf '%s' "$input" | jq -r '.tool_input.bypassPolicy // false')" == "true" ]]; then
+if [[ "$bypass_policy" == "true" ]]; then
   decide deny "bypassPolicy is blocked: a pull request completes through the branch policy, never around it."
 fi
 if [[ "$name" == "repo_pull_request_write" && "$action" == "vote" ]]; then

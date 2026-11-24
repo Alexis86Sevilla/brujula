@@ -13,10 +13,9 @@
 # merged settings as JSON, for skills and doctor.mjs:
 #   bash project-config.sh [project-dir]   -> JSON on stdout, exit 0; exit 1 + reason on stderr if invalid
 
-# Read with jq -s: exactly one JSON document, an object whose known keys have the right type.
-_brujula_config_valid='length == 1 and (.[0] | type == "object"
-  and ((has("pullRequests") | not) or (.pullRequests | type) == "boolean")
-  and ([.baseBranch, .testCmd, .lintCmd, .adoProject] | all(. == null or type == "string")))'
+# Validation and merging live in json.mjs (no jq needed): exactly one JSON document per file, an
+# object whose known keys have the right type. Resolved now: inside a function BASH_SOURCE may differ.
+_brujula_json="$(dirname "${BASH_SOURCE[0]}")/json.mjs"
 
 # _brujula_main_checkout <dir>: the main checkout of the repository that contains <dir> (the first
 # entry of `git worktree list`), or <dir> itself when there is none (a bare repository).
@@ -31,42 +30,32 @@ _brujula_main_checkout() {
   sed -n '1s/^worktree //p' <<<"$first"
 }
 
-# project_config_json <dir>: merged settings as compact JSON; exit 1 + reason on stderr if a file is invalid.
+# _brujula_local_file <dir>: the personal settings file of <dir>.
+_brujula_local_file() {
+  local local_file
+  local_file="$(_brujula_main_checkout "$1")/.claude/brujula.local.json"
+  [[ -f "$local_file" ]] || local_file="$1/.claude/brujula.local.json"
+  printf '%s\n' "$local_file"
+}
+
+# project_config_json <dir> [--pretty]: merged settings as compact JSON; exit 1 + reason on stderr if
+# a file is invalid.
 project_config_json() {
-  local dir="$1" shared local_file merged='{}' file
-  shared="$dir/.claude/brujula.json"
-  local_file="$(_brujula_main_checkout "$dir")/.claude/brujula.local.json"
-  [[ -f "$local_file" ]] || local_file="$dir/.claude/brujula.local.json"
-  for file in "$shared" "$local_file"; do
-    [[ -f "$file" ]] || continue
-    if ! jq -s -e "$_brujula_config_valid" "$file" >/dev/null 2>&1; then
-      echo "$file is invalid: it must be a JSON object like {\"pullRequests\": true, \"testCmd\": \"./mvnw test\"}" >&2
-      return 1
-    fi
-    if [[ "$file" == "$shared" ]]; then
-      merged=$(jq -c --argjson base "$merged" '$base + del(.testCmd, .lintCmd)' "$file")
-    else
-      merged=$(jq -c --argjson base "$merged" '$base + .' "$file")
-    fi
-  done
-  printf '%s\n' "$merged"
+  node "$_brujula_json" config "$1/.claude/brujula.json" "$(_brujula_local_file "$1")" ${2:+"$2"}
 }
 
 # pull_requests_setting <dir>: prints true | false | unset | invalid
 pull_requests_setting() {
-  local merged
-  merged=$(project_config_json "$1" 2>/dev/null) || { echo invalid; return 0; }
-  jq -r 'if has("pullRequests") then .pullRequests else "unset" end' <<<"$merged"
+  node "$_brujula_json" pull-requests "$1/.claude/brujula.json" "$(_brujula_local_file "$1")" 2>/dev/null || echo invalid
 }
 
 # project_setting <dir> <key>: the string value of <key>, or nothing (also when the files are invalid).
 project_setting() {
-  local merged
-  merged=$(project_config_json "$1" 2>/dev/null) || return 0
-  jq -r --arg k "$2" '.[$k] // empty' <<<"$merged"
+  node "$_brujula_json" setting "$1/.claude/brujula.json" "$(_brujula_local_file "$1")" "$2" 2>/dev/null
+  return 0
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
-  project_config_json "${1:-${CLAUDE_PROJECT_DIR:-$PWD}}" | jq .
+  project_config_json "${1:-${CLAUDE_PROJECT_DIR:-$PWD}}" --pretty
 fi

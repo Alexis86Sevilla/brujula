@@ -4,14 +4,13 @@
 # Set BRUJULA_NOTIFY_DRY_RUN=1 to print instead of notifying (used by the tests).
 set -u
 
-input=$(cat)
-event=$(printf '%s' "$input" | jq -r '.hook_event_name // "Notification"')
-title=$(printf '%s' "$input" | jq -r '.title // "Claude Code"')
-if [ "$event" = "Stop" ]; then
-  message="Turn finished"
-else
-  message=$(printf '%s' "$input" | jq -r '.message // "Claude needs your attention"')
-fi
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+{
+  IFS= read -r -d '' event
+  IFS= read -r -d '' title
+  IFS= read -r -d '' message
+} < <(node "$json" get hook_event_name=Notification "title=Claude Code" "message=Claude needs your attention")
+[ "$event" = "Stop" ] && message="Turn finished"
 project=$(basename "${CLAUDE_PROJECT_DIR:-$PWD}")
 title="$title · $project"
 

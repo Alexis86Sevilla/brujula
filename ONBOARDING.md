@@ -1,53 +1,56 @@
 # Brújula: instalación
 
-Requisitos: WSL2 con Node.js 22, git, `jq` (sin él, las protecciones del plugin no funcionan),
-la CLI de Azure con `az login` hecho, Claude Code con sesión iniciada y acceso de lectura a este repo
-en Azure Repos. `/brujula:doctor` comprueba todo lo que puede y te dice qué falta.
+Funciona en Windows (desde `cmd` o PowerShell) y en WSL/Linux. No hace falta instalar `jq` ni la
+CLI de Azure: Azure DevOps se conecta iniciando sesión con tu cuenta de Microsoft en el navegador.
 
-## 1. Credenciales de git (una vez)
+## Requisitos (una vez)
 
-Claude Code clona el marketplace con el `git` de tu máquina y sin poder preguntarte nada.
-Comprueba que no te pide credenciales:
+- **Node.js 22 o superior** (versión LTS de [nodejs.org](https://nodejs.org)).
+- **Git**. En Windows, [Git for Windows](https://git-scm.com/download/win): trae Git Bash, que
+  Claude Code usa para ejecutar las protecciones de Brújula.
+- **Claude Code** con tu sesión iniciada.
+- **Acceso de lectura a este repo** en Azure Repos.
 
-    GIT_TERMINAL_PROMPT=0 git ls-remote "https://github.com/Alexis86Sevilla/brujula.git" HEAD
+## 1. Comprueba el acceso al repo
 
-Debe imprimir un hash. Si falla, configura Git Credential Manager o una clave SSH
-(ver `docs/credenciales.md`) y repite.
+Claude Code descarga Brújula con `git` sin poder preguntarte nada, así que git tiene que tener ya
+tu acceso guardado. En una terminal:
 
-## 2. Instalar
+    git ls-remote "https://github.com/Alexis86Sevilla/brujula.git" HEAD
+
+Debe imprimir un código largo. Si se abre una ventana para iniciar sesión, entra con tu cuenta del
+trabajo y repite: Git for Windows guarda el acceso. En WSL, ver `docs/credenciales.md`.
+
+## 2. Instala
 
     claude plugin marketplace add "https://github.com/Alexis86Sevilla/brujula.git"
     claude plugin install brujula@brujula-equipo
 
-Para habilitarlo solo en un repo concreto, usa `--scope project` en el segundo comando y haz
-commit de `.claude/settings.json`. En este repo no hace falta: `.claude/settings.json` ya
-registra el marketplace y habilita el plugin cuando aceptas la confianza de la carpeta.
-
 ## 3. Primer arranque
 
-Abre `claude` en cualquier proyecto. Claude Code te pedirá `ado_org`: el nombre de tu
-organización de Azure DevOps (lo que aparece en `dev.azure.com/<org>`). Si no lo pide,
-ejecuta `/plugin configure brujula@brujula-equipo`.
+Abre `claude` en cualquier carpeta. Claude Code te pide dos datos:
 
-Ejecuta `/mcp`: `plugin:brujula:brujula` y `plugin:brujula:ado` deben aparecer conectados.
+- **Organización de Azure DevOps**: lo que aparece en `dev.azure.com/<organización>`.
+- **Cómo iniciar sesión**: deja `interactive` (navegador). Elige `azcli` solo si ya usas la CLI de
+  Azure con `az login`.
 
-## 4. Comprobar que funciona
+Si no te los pide, escribe `/plugin configure brujula@brujula-equipo`. La primera vez que Brújula
+use Azure DevOps se abrirá el navegador para que inicies sesión con tu cuenta de Microsoft.
 
-En una sesión de `claude`:
+## 4. Comprueba que funciona
 
-- `/plugin` lista `brujula@brujula-equipo` como habilitado.
-- `/brujula:` muestra las skills (backlog, bienvenida, configurar, doctor, empezar, explica-modulo, pr-prep,
-  publicar, sprint-sync, tareas, tarjeta, tarjeta-a-boards).
-- Pregunta: "Usa brujula_conventions y dime qué reglas devuelve". Debe llamar a la herramienta.
-- `/brujula:doctor` termina con todas las comprobaciones en verde.
+La primera vez, Claude te da la bienvenida él solo: comprueba la instalación, te pregunta qué haces
+en ese proyecto y te propone algo que probar. Si algo falla, escribe `/brujula:doctor`: dice qué
+falla y cómo arreglarlo.
 
 ## 5. Actualizar
 
 El orden importa. Cuando se publica una versión nueva:
 
-1. Trae los cambios del repo (`git pull`), cierra Claude y ábrelo otra vez en este repo. Al
-   arrancar, Claude Code registra la etiqueta nueva del marketplace; sin este paso, el siguiente
-   no encuentra nada que actualizar.
+1. Solo si trabajas en este repo (fija la versión con una etiqueta): `git pull`, cierra Claude y
+   ábrelo otra vez aquí. Al arrancar, Claude Code registra la etiqueta nueva; sin este paso, el
+   siguiente no encuentra nada que actualizar. Si instalaste Brújula con los comandos del paso 2,
+   sáltate este paso.
 2. En una terminal:
 
        claude plugin marketplace update brujula-equipo
@@ -64,13 +67,9 @@ Por qué: este repo fija el marketplace a una etiqueta (`ref` en `.claude/settin
 solo cambian cuando alguien publica una etiqueta nueva y sube `version` en
 `plugin/.claude-plugin/plugin.json`.
 
-## Primeros pasos
+## Cómo se usa
 
-Abre `claude` y sigue lo que te diga: la primera vez, Claude te da la bienvenida, comprueba él
-mismo que todo está bien instalado, te pregunta qué haces en ese proyecto y te propone una primera
-cosa que probar. Para verlo otra vez, escríbele "ayúdame a empezar con Brújula".
-
-La guía completa de uso está en `docs/USO.md`.
+La guía de uso, con qué usar para cada tarea, está en [docs/USO.md](docs/USO.md).
 
 ## Consejos
 
@@ -79,7 +78,8 @@ La guía completa de uso está en `docs/USO.md`.
   Azure DevOps: en `.claude/brujula.json` (versionado, lo decide el equipo) o en
   `.claude/brujula.local.json` (tuyo, nunca versionado). `/brujula:configurar` lo hace por ti.
   Detalles en `docs/USO.md`.
-- Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Siguen activos la protección de
+- Si un hook estorba en otro proyecto, arranca con `BRUJULA_HOOKS_OFF=1 claude` (en `cmd`:
+  `set BRUJULA_HOOKS_OFF=1 && claude`). Siguen activos la protección de
   ficheros (`.env`, configuración), el bloqueo de secretos y la confirmación de escrituras en Azure
   DevOps.
 - Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.

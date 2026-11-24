@@ -7,7 +7,12 @@ set -u
 
 [ "${BRUJULA_GATE_OFF:-}" = 1 ] && exit 0
 
-input=$(cat)
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+{
+  IFS= read -r -d '' session
+  IFS= read -r -d '' event
+  IFS= read -r -d '' stop_hook_active
+} < <(node "$json" get session_id hook_event_name stop_hook_active=false)
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
@@ -23,18 +28,18 @@ fingerprint() {
 
 # One starting point per session, so a turn is judged by what IT changed, not by red code left
 # over from an earlier turn (or a question that touched nothing).
-session=$(printf '%s' "$input" | jq -r '.session_id // empty' | tr -cd 'A-Za-z0-9_-')
+session=$(printf '%s' "$session" | tr -cd 'A-Za-z0-9_-')
 snapshot=""
 [ -n "$session" ] && snapshot="${TMPDIR:-/tmp}/brujula-gate-$session"
 
-if [ "$(printf '%s' "$input" | jq -r '.hook_event_name // empty')" = "UserPromptSubmit" ]; then
+if [ "$event" = "UserPromptSubmit" ]; then
   [ -n "$snapshot" ] && fingerprint >"$snapshot" 2>/dev/null
   exit 0
 fi
 
 # Already continuing because of this hook: do not block again.
 # A second red run means the agent could not fix it; stop wasting turns.
-[ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
+[ "$stop_hook_active" = "true" ] && exit 0
 
 if [ "${BRUJULA_GATE_FORCE:-}" != "1" ]; then
   if [ -n "$snapshot" ] && [ -f "$snapshot" ]; then

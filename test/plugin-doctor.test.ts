@@ -254,19 +254,22 @@ describe("doctor.mjs", () => {
     });
   });
 
-  it("fails when jq or the Azure CLI are missing: without jq every guard switches off silently", () => {
+  it("needs neither jq nor the Azure CLI: without az it only explains that az is for the azcli login", () => {
     const r = run(pluginRoot(), mkdtempSync(join(tmpdir(), "data-")), marketplace(), undefined, { PATH: bareBin() });
-    expect(byName(r.checks, "jq")).toMatchObject({ ok: false });
-    expect(byName(r.checks, "jq")?.fix).toContain("sudo apt install jq");
-    expect(byName(r.checks, "azure-cli")).toMatchObject({ ok: false });
-    expect(byName(r.checks, "azure-cli")?.fix).toContain("az login");
-    expect(r.status).not.toBe(0);
+    expect(byName(r.checks, "jq")).toBeUndefined();
+    expect(byName(r.checks, "azure-cli")).toMatchObject({
+      ok: true,
+      detail:
+        "Azure CLI not installed: not needed with the browser login (the default); only if you chose azcli, install it and run az login (https://learn.microsoft.com/cli/azure/install-azure-cli)",
+    });
   });
 
-  it("passes the jq and Azure CLI checks when both are installed", () => {
+  it("says when the Azure CLI is installed", () => {
     const r = run(pluginRoot(), mkdtempSync(join(tmpdir(), "data-")), marketplace());
-    expect(byName(r.checks, "jq")).toMatchObject({ ok: true });
-    expect(byName(r.checks, "azure-cli")).toMatchObject({ ok: true });
+    expect(byName(r.checks, "azure-cli")).toMatchObject({
+      ok: true,
+      detail: "Azure CLI installed (used by the azcli login)",
+    });
   });
 
   it("skips the pull request question outside a code project (a PM's folder), without failing", () => {

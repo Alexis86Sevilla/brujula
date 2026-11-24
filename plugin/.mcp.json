@@ -8,13 +8,13 @@
       }
     },
     "ado": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
+        "${CLAUDE_PLUGIN_ROOT}/scripts/start-ado.mjs",
         "@azure-devops/mcp@2.11.0",
         "${user_config.ado_org}",
         "--authentication",
-        "azcli",
+        "${user_config.ado_auth}",
         "-d",
         "core",
         "work",

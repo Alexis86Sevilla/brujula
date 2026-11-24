@@ -22844,7 +22844,7 @@ async function readTopic(root2, topic) {
 }
 
 // src/mcp/server.ts
-var SERVER_VERSION = "0.4.2";
+var SERVER_VERSION = "0.5.0";
 var MAX_CARD_CHARS = 1e5;
 var text = (t) => ({ content: [{ type: "text", text: t }] });
 var fail = (t) => ({ content: [{ type: "text", text: t }], isError: true });

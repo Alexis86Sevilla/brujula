@@ -283,6 +283,57 @@ describe("MCP servers of the plugin", () => {
     }
   });
 
+  it("starts the Azure DevOps server through the cross-platform launcher with the login method from userConfig", () => {
+    expect(mcp.mcpServers.ado.command).toBe("node");
+    const args: string[] = mcp.mcpServers.ado.args;
+    expect(args[0]).toBe("${CLAUDE_PLUGIN_ROOT}/scripts/start-ado.mjs");
+    expect(args.slice(args.indexOf("--authentication"), args.indexOf("--authentication") + 2)).toEqual([
+      "--authentication",
+      "${user_config.ado_auth}",
+    ]);
+    const manifest = readJson(join(plugin, ".claude-plugin/plugin.json"));
+    expect(manifest.userConfig.ado_auth).toMatchObject({
+      type: "string",
+      options: ["interactive", "azcli"],
+      default: "interactive",
+    });
+  });
+
+  describe("start-ado.mjs", () => {
+    const launcher = join(scriptsDir, "start-ado.mjs");
+    const resolve = (...args: string[]) => {
+      const r = spawnSync(process.execPath, [launcher, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, BRUJULA_ADO_DRY_RUN: "1" },
+      });
+      expect(r.status, r.stderr).toBe(0);
+      return JSON.parse(r.stdout) as { command: string; args: string[] };
+    };
+    const base = ["@azure-devops/mcp@2.11.0", "org", "--authentication"];
+
+    it("runs npm's npx with the given arguments through Node, so it needs no shell on Windows", () => {
+      const r = resolve(...base, "azcli", "-d", "core");
+      expect(r.command).toBe(process.execPath);
+      expect(r.args.slice(1)).toEqual([
+        "-y",
+        "@azure-devops/mcp@2.11.0",
+        "org",
+        "--authentication",
+        "azcli",
+        "-d",
+        "core",
+      ]);
+      expect(r.args[0]).toMatch(/npx-cli\.js$/);
+    });
+
+    it("logs in through the browser when the method is unset or unknown", () => {
+      for (const value of ["${user_config.ado_auth}", "", "bogus"]) {
+        const r = resolve(...base, value);
+        expect(r.args.slice(r.args.indexOf("--authentication"))).toEqual(["--authentication", "interactive"]);
+      }
+    });
+  });
+
   it("pins the Azure DevOps server and takes the organization from userConfig", () => {
     const args: string[] = mcp.mcpServers.ado.args;
     const pkg = args.find((a) => a.startsWith("@azure-devops/mcp"));
@@ -312,7 +363,10 @@ describe("MCP servers of the plugin", () => {
     for (const server of Object.values<{ args?: string[] }>(mcp.mcpServers)) {
       for (const arg of server.args ?? []) {
         if (!arg.startsWith("${CLAUDE_PLUGIN_ROOT}/")) continue;
-        expect(existsSync(join(plugin, arg.replace("${CLAUDE_PLUGIN_ROOT}/", ""))), arg).toBe(true);
+        const rel = arg.replace("${CLAUDE_PLUGIN_ROOT}/", "");
+        // Scripts may be drafts (BRUJULA_TEST_SCRIPTS), like the hook tests.
+        const file = rel.startsWith("scripts/") ? join(scriptsDir, rel.slice("scripts/".length)) : join(plugin, rel);
+        expect(existsSync(file), arg).toBe(true);
       }
     }
   });

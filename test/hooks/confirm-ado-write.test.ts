@@ -55,7 +55,7 @@ describe("confirm-ado-write hook", () => {
     expect(decide(ado("wit_work_item_attachment"), { id: 1 })).toBeUndefined();
   });
 
-  it("asks (fails closed) when jq is missing", () => {
+  it("asks (fails closed) when node is missing", () => {
     const bin = mkdtempSync(join(tmpdir(), "no-jq-"));
     symlinkSync(execFileSync("bash", ["-c", "command -v cat"], { encoding: "utf8" }).trim(), join(bin, "cat"));
     const r = spawnSync("/bin/bash", [join(scriptsDir, "confirm-ado-write.sh")], {
@@ -65,6 +65,21 @@ describe("confirm-ado-write hook", () => {
     });
     rmSync(bin, { recursive: true, force: true });
     expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe("ask");
+  });
+
+  it("asks (fails closed) when node is present but cannot run the helper", () => {
+    const r = runHook(
+      "confirm-ado-write.sh",
+      { hook_event_name: "PreToolUse", tool_name: ado("wit_work_item_write"), tool_input: {} },
+      { NODE_OPTIONS: "--require=/nonexistent/broken.js" },
+    );
+    expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision).toBe("ask");
+  });
+
+  it("keeps denying when a value hides a NUL character", () => {
+    for (const input of [{ action: "x\u0000", bypassPolicy: true }, { action: "\u0000vote" }]) {
+      expect(decide(ado("repo_pull_request_write"), input)?.permissionDecision, JSON.stringify(input)).toBe("deny");
+    }
   });
 
   it("ignores tools of other servers", () => {

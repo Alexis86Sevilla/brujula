@@ -12,9 +12,10 @@
 set -u
 
 input=$(cat)
-# Cheap exit for every other Bash command, before spawning jq or git.
+# Cheap exit for every other Bash command, before spawning node or git.
 [[ $input == *commit* ]] || exit 0
-cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+json="$(dirname "${BASH_SOURCE[0]}")/lib/json.mjs"
+IFS= read -r -d '' cmd < <(node "$json" get tool_input.command <<<"$input")
 commit_re='git[^;&|]*[[:space:]]commit([^;&|]*)'
 [[ $cmd =~ $commit_re ]] || exit 0
 commit_args=${BASH_REMATCH[1]}
@@ -22,7 +23,7 @@ commit_args=${BASH_REMATCH[1]}
 [ "${BRUJULA_ALLOW_SECRETS:-}" = "1" ] && exit 0
 
 deny() {
-  jq -n --arg r "$1" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
+  node "$json" decision deny "$1"
   exit 0
 }
 
