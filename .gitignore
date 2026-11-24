@@ -11,6 +11,7 @@ CLAUDE.local.md
 odd/
 .claude/context/
 .cache/
-review-out/
 !plugin/dist/
 plugin/.data/
+# Regenerated per machine by the skill registry.
+.atl/

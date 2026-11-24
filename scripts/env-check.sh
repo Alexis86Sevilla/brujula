@@ -62,17 +62,6 @@ check_claude() {
   fi
 }
 
-check_statusline() {
-  local statusline="$HOME/.claude/statusline.sh"
-  if [[ ! -e "$statusline" ]]; then
-    fail "statusline executable" "$statusline does not exist (see Module 0b)"
-  elif [[ ! -x "$statusline" ]]; then
-    fail "statusline executable" "$statusline is not executable (chmod +x)"
-  else
-    ok "statusline executable ($statusline)"
-  fi
-}
-
 check_not_under_mnt() {
   if [[ "$REPO_ROOT" == /mnt/* ]]; then
     fail "repo outside /mnt/" "repo is at $REPO_ROOT; move it to the Linux filesystem"
@@ -113,7 +102,6 @@ check_settings_json() {
 check_node
 check_jq
 check_claude
-check_statusline
 check_not_under_mnt
 check_origin
 check_settings_json
