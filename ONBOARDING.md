@@ -1,7 +1,8 @@
 # Brújula: instalación
 
-Requisitos: WSL2 con Node.js 22, git, `az login` hecho, Claude Code con sesión iniciada y acceso
-de lectura a este repo en Azure Repos.
+Requisitos: WSL2 con Node.js 22, git, `jq` (sin él, las protecciones del plugin no funcionan),
+la CLI de Azure con `az login` hecho, Claude Code con sesión iniciada y acceso de lectura a este repo
+en Azure Repos. `/brujula:doctor` comprueba todo lo que puede y te dice qué falta.
 
 ## 1. Credenciales de git (una vez)
 
@@ -42,15 +43,26 @@ En una sesión de `claude`:
 
 ## 5. Actualizar
 
-    claude plugin marketplace update brujula-equipo
-    claude plugin update brujula@brujula-equipo
+El orden importa. Cuando se publica una versión nueva:
 
-Luego `/reload-plugins` en las sesiones abiertas. Solo llega una versión nueva cuando sube
-`version` en `plugin/.claude-plugin/plugin.json`.
+1. Trae los cambios del repo (`git pull`), cierra Claude y ábrelo otra vez en este repo. Al
+   arrancar, Claude Code registra la etiqueta nueva del marketplace; sin este paso, el siguiente
+   no encuentra nada que actualizar.
+2. En una terminal:
 
-Este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`, por ejemplo
-`v0.3.0`), no a `main`: los hooks y servidores MCP del plugin se ejecutan en la máquina de cada
-compañero, así que solo cambian cuando alguien publica una etiqueta nueva y actualiza ese `ref`.
+       claude plugin marketplace update brujula-equipo
+       claude plugin update brujula@brujula-equipo --scope user && claude plugin update brujula@brujula-equipo --scope project
+
+3. Cierra Claude y ábrelo de nuevo (no `--resume`).
+
+Si `update` responde "already at the latest version" con la versión vieja, te has saltado el
+paso 1. `/brujula:doctor` lo detecta y te dice qué ejecutar. No desinstales para arreglarlo:
+no ayuda y borra tu configuración (`ado_org`).
+
+Por qué: este repo fija el marketplace a una etiqueta (`ref` en `.claude/settings.json`), no a
+`main`. Los hooks y servidores MCP del plugin se ejecutan en la máquina de cada compañero, así que
+solo cambian cuando alguien publica una etiqueta nueva y sube `version` en
+`plugin/.claude-plugin/plugin.json`.
 
 ## Primeros pasos
 
@@ -62,13 +74,14 @@ La guía completa de uso está en `docs/USO.md`.
 
 ## Consejos
 
-- Tras instalar o actualizar el plugin, ejecuta `/reload-plugins` o abre un `claude` nuevo (no `--resume`).
+- Tras instalar o actualizar el plugin, cierra Claude y abre un `claude` nuevo (no `--resume`).
 - Cada proyecto declara si usa pull requests, su rama base, su comando de tests y su proyecto de
   Azure DevOps: en `.claude/brujula.json` (versionado, lo decide el equipo) o en
   `.claude/brujula.local.json` (tuyo, nunca versionado). `/brujula:configurar` lo hace por ti.
   Detalles en `docs/USO.md`.
-- Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Los bloqueos de `.env` y de
-  secretos siguen activos.
+- Si un hook estorba en otro proyecto: `BRUJULA_HOOKS_OFF=1 claude`. Siguen activos la protección de
+  ficheros (`.env`, configuración), el bloqueo de secretos y la confirmación de escrituras en Azure
+  DevOps.
 - Las escrituras en Azure Boards siempre piden confirmación: lee el texto exacto antes de aprobar.
 
 ## Si algo falla

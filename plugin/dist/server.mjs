@@ -22811,9 +22811,10 @@ function lintCard(markdown) {
 }
 
 // src/mcp/conventions.ts
-import { readFile, readdir as readdir2 } from "node:fs/promises";
+import { access, readFile, readdir as readdir2 } from "node:fs/promises";
 import { join as join2 } from "node:path";
 var MAX_CHARS = 8e3;
+var NO_CONVENTIONS = "This project has no conventions yet: no CLAUDE.md and no .claude/rules/*.md.";
 async function listTopics(root2) {
   let files = [];
   try {
@@ -22821,7 +22822,11 @@ async function listTopics(root2) {
   } catch {
   }
   const topics = files.filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3));
-  return ["claude-md", ...topics.sort()];
+  const hasClaudeMd = await access(join2(root2, "CLAUDE.md")).then(
+    () => true,
+    () => false
+  );
+  return [...hasClaudeMd ? ["claude-md"] : [], ...topics.sort()];
 }
 async function readTopic(root2, topic) {
   const known = await listTopics(root2);
@@ -22839,7 +22844,7 @@ async function readTopic(root2, topic) {
 }
 
 // src/mcp/server.ts
-var SERVER_VERSION = "0.4.1";
+var SERVER_VERSION = "0.4.2";
 var MAX_CARD_CHARS = 1e5;
 var text = (t) => ({ content: [{ type: "text", text: t }] });
 var fail = (t) => ({ content: [{ type: "text", text: t }], isError: true });
@@ -22862,6 +22867,7 @@ function createServer(deps = { root: process.cwd() }) {
     },
     async ({ topic }) => {
       const topics = await listTopics(deps.root);
+      if (topics.length === 0) return topic ? fail(NO_CONVENTIONS) : text(NO_CONVENTIONS);
       if (!topic) return text(`Available topics: ${topics.join(", ")}`);
       const body = await readTopic(deps.root, topic);
       if (body === null) {

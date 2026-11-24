@@ -61,6 +61,16 @@ describe("tools", () => {
     }
   });
 
+  it("brujula_conventions says the project has none, instead of offering a topic it cannot serve", async () => {
+    root = await mkdtemp(join(tmpdir(), "brujula-empty-"));
+    await connect();
+    const list = await client.callTool({ name: "brujula_conventions", arguments: {} });
+    expect(firstText(list)).toBe("This project has no conventions yet: no CLAUDE.md and no .claude/rules/*.md.");
+    const r = await client.callTool({ name: "brujula_conventions", arguments: { topic: "claude-md" } });
+    expect(r.isError).toBe(true);
+    expect(firstText(r)).toBe("This project has no conventions yet: no CLAUDE.md and no .claude/rules/*.md.");
+  });
+
   it("brujula_adr_create writes numbered files", async () => {
     await connect();
     const args = {

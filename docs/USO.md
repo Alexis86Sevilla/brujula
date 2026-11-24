@@ -44,9 +44,11 @@ proyecto si no les pasas uno, y si no hay, te lo preguntan. `sprint-sync` siempr
 
 ## Flujo del PM: de la idea a la tarea
 
-1. `/brujula:tarjeta <idea>` escribe `docs/cards/<slug>.md` y la valida con `check-card.mjs`.
+1. `/brujula:tarjeta <idea>` te enseña la tarjeta, la valida con `check-card.mjs` y la guarda en
+   `docs/cards/` si el proyecto tiene esa carpeta (si no, en la carpeta de datos del plugin, sin
+   dejar rastro en el repo).
 2. Pide al agente `refinador` que la juzgue. Arregla lo que marque como MISSING o WEAK.
-3. `/brujula:tarjeta-a-boards docs/cards/<slug>.md`: te enseña el payload exacto y solo crea el
+3. `/brujula:tarjeta-a-boards <ruta que te dio>`: te enseña el payload exacto y solo crea el
    work item cuando respondes **sí**.
 4. `/brujula:tareas <id>` propone las tareas hijas; también espera tu **sí**.
 
@@ -131,18 +133,18 @@ Corren en todos tus proyectos. Los de Node solo actúan si el proyecto tiene sus
 | Al abrir o retomar una sesión | Inyecta la rama, los últimos commits y tu sprint (`.claude/context/sprint.md`) |
 | Al enviar un prompt | Rechaza prompts con secretos y recuerda leer los work items que menciones (`#1234`) |
 | Antes de editar | Bloquea `.env` y, salvo con `BRUJULA_UNLOCK=1`, `.git/`, `package-lock.json`, `pipelines/`, los hooks y `.claude/settings.json` |
-| Antes de un comando | Bloquea `rm -r`, `git push --force`, `git reset --hard`, saltarse hooks (`-n`, `--no-verify`), `curl … \| sh`, `chmod 777` y el push a `main` según `pullRequests` |
+| Antes de un comando | Bloquea `rm -r`, `git push --force`, `git reset --hard`, saltarse hooks (`-n`, `--no-verify`), `curl … \| sh`, `chmod 777` y el push a `main` según `pullRequests` (también un `git push` sin rama estando en `main`) |
 | Antes de escribir en Azure DevOps | Te pide confirmación en cualquier repo (work items, comentarios, PR, ramas, wiki, reordenar el backlog, guardar adjuntos en disco); bloquea votar una PR y saltarse sus políticas |
 | Antes de un commit | Bloquea el commit si el diff añade un secreto (cita fichero y línea, nunca el valor) |
 | Después de editar | Formatea con prettier si el proyecto lo tiene |
-| Al terminar un turno | Si tocaste `src/` o `test/`, exige los tests en verde: `testCmd` si el proyecto lo declara; si no, typecheck y vitest en proyectos con `tsconfig.json`, `tsc` y `vitest` |
+| Al terminar un turno | Si el turno cambió ficheros (o hizo commit), exige los tests en verde: `testCmd` si el proyecto lo declara; si no, typecheck y vitest en proyectos con `tsconfig.json`, `tsc` y `vitest` |
 | Cuando Claude espera o termina | Notificación de escritorio |
 
 Interruptores, siempre al arrancar `claude`:
 
 | Variable | Efecto |
 |----------|--------|
-| `BRUJULA_HOOKS_OFF=1` | Apaga los hooks en esa sesión, salvo los de secretos y la confirmación de escrituras en Azure DevOps |
+| `BRUJULA_HOOKS_OFF=1` | Apaga los hooks en esa sesión, salvo la protección de ficheros, el bloqueo de secretos y la confirmación de escrituras en Azure DevOps |
 | `BRUJULA_GATE_OFF=1` | Apaga solo la puerta de typecheck y tests (útil en la fase roja de TDD) |
 | `BRUJULA_UNLOCK=1` | Permite editar las rutas protegidas de configuración |
 | `BRUJULA_ALLOW_SECRETS=1` | Permite un commit que el escáner de secretos bloquea (falsos positivos) |
@@ -155,7 +157,7 @@ Interruptores, siempre al arrancar `claude`:
 - `npm run check` antes de dar algo por hecho; `npm run check:plugin` si tocas el plugin.
 - Publicar una versión: sube `version` en `plugin/.claude-plugin/plugin.json` y `SERVER_VERSION`
   en `src/mcp/server.ts`, `npm run build:plugin`, crea la etiqueta `v<versión>` y actualiza el
-  `ref` del marketplace en `.claude/settings.json`.
+  `ref` del marketplace en `.claude/settings.json`. Recuerda al equipo el orden de actualización.
 
 ## Seguridad: lo que nunca hace sin ti
 
@@ -168,6 +170,6 @@ Interruptores, siempre al arrancar `claude`:
 
 1. `/brujula:doctor`: dice qué falla y el comando que lo arregla.
 2. `/plugin`, pestaña Errors: qué componente no cargó.
-3. `claude plugin list`: comprueba que tienes la última versión; si no,
-   `claude plugin marketplace update brujula-equipo && claude plugin update brujula@brujula-equipo`
-   y `/reload-plugins`.
+3. ¿Versión vieja? Sigue el orden de [ONBOARDING.md](../ONBOARDING.md#5-actualizar): reinicia
+   Claude en el repo, después `marketplace update` y `update` en los dos ámbitos. `/brujula:doctor`
+   te avisa si te saltaste un paso.

@@ -2,11 +2,11 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { createAdr } from "./adr.js";
 import { lintCard } from "./card-lint.js";
-import { listTopics, readTopic } from "./conventions.js";
+import { listTopics, NO_CONVENTIONS, readTopic } from "./conventions.js";
 import { CARD_STANDARD } from "./standard.js";
 
 /** Must equal "version" in plugin/.claude-plugin/plugin.json (test/server.test.ts checks it). */
-export const SERVER_VERSION = "0.4.1";
+export const SERVER_VERSION = "0.4.2";
 
 /** Max characters accepted by brujula_card_lint; checked in the handler so the error can guide the model. */
 export const MAX_CARD_CHARS = 100_000;
@@ -47,6 +47,7 @@ export function createServer(deps: ServerDeps = { root: process.cwd() }): McpSer
     },
     async ({ topic }) => {
       const topics = await listTopics(deps.root);
+      if (topics.length === 0) return topic ? fail(NO_CONVENTIONS) : text(NO_CONVENTIONS);
       if (!topic) return text(`Available topics: ${topics.join(", ")}`);
       const body = await readTopic(deps.root, topic);
       if (body === null) {

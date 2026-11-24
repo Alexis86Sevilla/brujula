@@ -24,8 +24,10 @@ Run, without asking:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/doctor.mjs "${CLAUDE_PLUGIN_ROOT}" "${CLAUDE_PLUGIN_DATA}"
 ```
 
-It prints a JSON list of checks `{ name, ok, detail, fix, skipped? }`. Never show the JSON. Say
-"Todo está bien instalado" when every check is ok (a skipped check is fine; do not mention it).
+It prints a JSON list of checks `{ name, ok, detail, fix, skipped? }`. Never show the JSON. Only the
+installation matters here: ignore the `pull-requests` check (a project setting that
+`/brujula:configurar` handles later). Say "Todo está bien instalado" when every other check is ok
+(a skipped check is fine; do not mention it).
 For a failing check, explain the problem in one plain sentence and offer to fix it; if the fix is a
 command only they can run (git credentials, for example), tell them exactly what to copy and where
 (the terminal of their computer, or typed in this chat starting with `!`), one step at a time.
@@ -45,8 +47,9 @@ Offer only what matches their answer, and at most two options; do it with them i
   "créame un backlog sobre …".
 - **Programmer**: prepare this project once (it changes nothing that others see). It needs one
   thing typed by them: `/brujula:configurar`. Then, to start a card: `/brujula:empezar <número>`.
-- **Tech lead**: check whether a card is ready to be implemented: ask for its number or text and
-  use the `refinador` agent. Also the PM option for writing cards.
+- **Tech lead**: check whether a card is ready to be implemented: ask for its number in Azure
+  Boards and give it to the `refinador` agent (it takes a number or a card file, not pasted text).
+  Also the PM option for writing cards.
 
 If the folder is not a code project (no git repository), skip the programmer option and say
 that it is for when they open Claude inside a project's code.

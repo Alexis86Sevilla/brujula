@@ -11,9 +11,11 @@ input=$(cat)
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
-# Fingerprint of the working tree: tracked changes against HEAD plus untracked (not ignored) files.
+# Fingerprint of the work: the current commit (a turn may commit its edits), tracked changes against
+# HEAD and untracked (not ignored) files.
 fingerprint() {
   {
+    git rev-parse HEAD 2>/dev/null
     git diff HEAD --no-ext-diff --binary 2>/dev/null
     git ls-files -z --others --exclude-standard 2>/dev/null | xargs -0 -r sha1sum 2>/dev/null
   } | sha1sum

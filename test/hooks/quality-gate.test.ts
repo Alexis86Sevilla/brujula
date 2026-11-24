@@ -113,6 +113,18 @@ describe("quality-gate only checks turns that changed files", () => {
     expect(r.stderr).toContain("red from before");
   });
 
+  it("blocks a turn that edited and committed, leaving the tree as clean as it found it", () => {
+    const { repo, env } = setup();
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", ...args]);
+    git("add", "-A");
+    git("commit", "-q", "-m", "earlier work");
+    runHook("quality-gate.sh", prompt, env);
+    writeFileSync(join(repo, "src/a.ts"), "export const a = 2;\n");
+    git("commit", "-q", "-am", "this turn");
+    expect(runHook("quality-gate.sh", stopIn("s1"), env).code).toBe(2);
+  });
+
   it("checks as before when the session has no starting point (changes under src or test)", () => {
     const { env } = setup();
     runHook("quality-gate.sh", prompt, env);

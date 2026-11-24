@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -87,6 +88,53 @@ describe("guard-bash hook", () => {
     it("lets the push through when the project does not use pull requests", () => {
       expect(push(project('{ "pullRequests": false }'))).toBeUndefined();
       expect(push(project('{ "pullRequests": false }'), "git push origin master")).toBeUndefined();
+    });
+
+    describe("a push that names no destination goes to the current branch", () => {
+      function repoOn(branch: string, config: string): string {
+        const dir = project(config);
+        execFileSync("git", ["init", "-q", "-b", branch, dir]);
+        return dir;
+      }
+
+      it.each([
+        "git push",
+        "git push origin",
+        "git push origin HEAD",
+        "git push -u origin HEAD",
+        "git push --set-upstream origin",
+      ])("denies '%s' on main when the project uses pull requests", (cmd) => {
+        expect(push(repoOn("main", '{ "pullRequests": true }'), cmd)?.permissionDecision).toBe("deny");
+      });
+
+      it("lets it through on a feature branch, or on main without pull requests", () => {
+        expect(push(repoOn("feature/1-x", '{ "pullRequests": true }'), "git push -u origin HEAD")).toBeUndefined();
+        expect(push(repoOn("main", '{ "pullRequests": false }'), "git push")).toBeUndefined();
+      });
+
+      it.each([
+        "git push origin HEAD 2>&1",
+        "git push origin 2>/dev/null",
+        'git push origin "HEAD"',
+        "git push\nnpm test",
+        "git push -o ci.skip origin",
+        "git push --repo origin",
+      ])("still sees no destination in '%s' (redirections, quotes, new lines, options with values)", (cmd) => {
+        expect(push(repoOn("main", '{ "pullRequests": true }'), cmd)?.permissionDecision).toBe("deny");
+      });
+
+      it.each([
+        "git switch -c feat/x && git push -u origin HEAD",
+        "git checkout -b feat/x && git push",
+        "cd ../other && git push",
+        "git -C ../other push",
+        "git push --tags",
+        "git push origin --tags",
+        "git push --dry-run",
+        "git push origin --delete old-branch",
+      ])("does not guess the branch when the command changes it or pushes no branch: '%s'", (cmd) => {
+        expect(push(repoOn("main", '{ "pullRequests": true }'), cmd)).toBeUndefined();
+      });
     });
 
     it("denies it and asks for a pull request when the project uses them", () => {

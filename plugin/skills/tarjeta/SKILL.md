@@ -17,12 +17,16 @@ Rough idea received: $ARGUMENTS
    [templates/card.md](templates/card.md). The example is illustrative: never copy its facts.
 3. Ask at most three clarifying questions, in a single message, and only about what is missing:
    who benefits, why now, how success will be observed. If the idea is already clear, skip this step.
-4. Write the card in Spanish to `docs/cards/<slug>.md` (`<slug>` is kebab-case from the title) using
-   the headings of the template. Drop `## Cómo` when there is no operation to run and `## Riesgo`
+4. Write the card in Spanish to `<dir>/<slug>.md` (`<slug>` is kebab-case from the title) using
+   the headings of the template. `<dir>` is `docs/cards` when that folder already exists in the
+   current project (the team keeps its cards there); otherwise `${CLAUDE_PLUGIN_DATA}/cards`, so no
+   file is left in a repository that is not yours or in a folder that is not a project. Drop `## Cómo` when there is no operation to run and `## Riesgo`
    when there is no real risk. Say each thing once, but keep every operational detail.
-5. Run `node ${CLAUDE_SKILL_DIR}/scripts/check-card.mjs docs/cards/<slug>.md`.
+5. Run `node ${CLAUDE_SKILL_DIR}/scripts/check-card.mjs <dir>/<slug>.md`.
    Exit code 1 means the card is invalid: fix every listed error and run it again.
    Try at most three times; if it still fails, show the remaining errors to the user.
 6. Never invent facts: links, ADR numbers, people, dates, metrics. If you do not know something,
    add it to an extra section `## Preguntas abiertas` instead of guessing.
-7. Reply with the file path, the checker result and the open questions, nothing else.
+7. Reply with the card itself (its full markdown, so the user reads it without opening a file), then
+   one line with the checker result, the open questions if any, and one line saying where it was
+   saved and that `/brujula:tarjeta-a-boards <path>` publishes it in Azure Boards after a yes.

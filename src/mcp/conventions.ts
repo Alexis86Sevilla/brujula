@@ -1,9 +1,12 @@
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const MAX_CHARS = 8_000;
 
-/** Topics = basenames of .claude/rules/*.md, plus "claude-md" for the root CLAUDE.md. */
+/** What the tool says in a project without CLAUDE.md or rules (any repository the plugin opens). */
+export const NO_CONVENTIONS = "This project has no conventions yet: no CLAUDE.md and no .claude/rules/*.md.";
+
+/** Topics = basenames of .claude/rules/*.md, plus "claude-md" when the root CLAUDE.md exists. */
 export async function listTopics(root: string): Promise<string[]> {
   let files: string[] = [];
   try {
@@ -12,7 +15,11 @@ export async function listTopics(root: string): Promise<string[]> {
     // no rules directory yet
   }
   const topics = files.filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3));
-  return ["claude-md", ...topics.sort()];
+  const hasClaudeMd = await access(join(root, "CLAUDE.md")).then(
+    () => true,
+    () => false,
+  );
+  return [...(hasClaudeMd ? ["claude-md"] : []), ...topics.sort()];
 }
 
 /** Returns the content of a topic, or null if it is not a known topic.

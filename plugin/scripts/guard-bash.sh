@@ -27,7 +27,40 @@ check "${git_push}"'[[:space:]](-f|--force|["'\'']?\+[^[:space:]]+)([[:space:]]|
 # Pushing to main depends on the project: some teams use pull requests, others do not.
 # The destination is main when the last refspec part is main: "main", "HEAD:main", "x:refs/heads/main".
 push_main="${git_push}"'[[:space:]:+"'\''](refs/heads/)?(main|master)([[:space:]"'\'']|$)'
+to_main=0
 if [[ $cmd =~ $push_main ]]; then
+  to_main=1
+elif [[ $cmd =~ $git_push ]]; then
+  # No destination, or only HEAD ("git push", "git push -u origin HEAD"): it goes to the current
+  # branch. The branch is read before the command runs, so only guess it when the command cannot
+  # change it or point elsewhere (cd, checkout, switch, git -C) and pushes a branch at all.
+  push_args="${BASH_REMATCH[0]%%$'\n'*}"
+  moves='(^|[^[:alnum:]_-])(cd|checkout|switch)([[:space:]]|$)'
+  no_branch='[[:space:]](--tags|--delete|-d|--dry-run|-n|--all|--mirror)([[:space:]=]|$)'
+  if [[ ! $cmd =~ $moves && ! $push_args =~ ^git[[:space:]]+-C && ! $push_args =~ $no_branch ]]; then
+    read -ra words <<<"${push_args#*push}"
+    positional=()
+    takes_value=0
+    for w in ${words[@]+"${words[@]}"}; do
+      if [[ $takes_value == 1 ]]; then
+        takes_value=0
+        continue
+      fi
+      case $w in
+        -o | --push-option | --repo | --receive-pack | --exec) takes_value=1 ;;
+        -* | [0-9]\>* | [0-9]\<* | \>* | \<* | \&\>*) ;; # options and redirections
+        *) positional+=("${w//[\"\']/}") ;;
+      esac
+    done
+    refspecs=()
+    [[ ${#positional[@]} -gt 1 ]] && refspecs=("${positional[@]:1}")
+    if [[ ${#refspecs[@]} -eq 0 || "${refspecs[*]}" =~ ^(HEAD[[:space:]]*)+$ ]]; then
+      branch=$(git -C "${CLAUDE_PROJECT_DIR:-.}" branch --show-current 2>/dev/null)
+      [[ $branch == main || $branch == master ]] && to_main=1
+    fi
+  fi
+fi
+if [[ $to_main == 1 ]]; then
   # shellcheck source=lib/project-config.sh
   source "$(dirname "$0")/lib/project-config.sh"
   case "$(pull_requests_setting "${CLAUDE_PROJECT_DIR:-.}")" in

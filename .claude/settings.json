@@ -1,5 +1,33 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(node plugin/skills/tarjeta/scripts/check-card.mjs *)",
+      "Bash(npm run check)",
+      "Bash(npm run lint)",
+      "Bash(npm run test *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm test *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "mcp__plugin_brujula_ado__core_list_project_teams",
+      "mcp__plugin_brujula_ado__core_list_projects",
+      "mcp__plugin_brujula_ado__repo_branch",
+      "mcp__plugin_brujula_ado__repo_file",
+      "mcp__plugin_brujula_ado__repo_pull_request",
+      "mcp__plugin_brujula_ado__repo_pull_request_thread",
+      "mcp__plugin_brujula_ado__repo_repository",
+      "mcp__plugin_brujula_ado__wiki",
+      "mcp__plugin_brujula_ado__wit_backlog",
+      "mcp__plugin_brujula_ado__wit_query",
+      "mcp__plugin_brujula_ado__wit_work_item",
+      "mcp__plugin_brujula_ado__work",
+      "mcp__plugin_brujula_brujula__brujula_conventions"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",
@@ -35,35 +63,22 @@
       "mcp__plugin_brujula_ado__*_write",
       "mcp__plugin_brujula_ado__repo_create_branch",
       "mcp__plugin_brujula_ado__wiki_upsert_page"
-    ],
-    "allow": [
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git status *)",
-      "Bash(node plugin/skills/tarjeta/scripts/check-card.mjs *)",
-      "Bash(npm run check)",
-      "Bash(npm run lint)",
-      "Bash(npm run test *)",
-      "Bash(npm run typecheck)",
-      "Bash(npm test *)",
-      "Bash(npx tsc *)",
-      "Bash(npx vitest *)",
-      "WebFetch(domain:code.claude.com)",
-      "WebFetch(domain:modelcontextprotocol.io)",
-      "mcp__plugin_brujula_ado__core_list_project_teams",
-      "mcp__plugin_brujula_ado__core_list_projects",
-      "mcp__plugin_brujula_ado__repo_branch",
-      "mcp__plugin_brujula_ado__repo_file",
-      "mcp__plugin_brujula_ado__repo_pull_request",
-      "mcp__plugin_brujula_ado__repo_pull_request_thread",
-      "mcp__plugin_brujula_ado__repo_repository",
-      "mcp__plugin_brujula_ado__wiki",
-      "mcp__plugin_brujula_ado__wit_backlog",
-      "mcp__plugin_brujula_ado__wit_query",
-      "mcp__plugin_brujula_ado__wit_work_item",
-      "mcp__plugin_brujula_ado__work",
-      "mcp__plugin_brujula_brujula__brujula_conventions"
     ]
+  },
+  "worktree": {
+    "baseRef": "head"
+  },
+  "enabledPlugins": {
+    "brujula@brujula-equipo": true
+  },
+  "extraKnownMarketplaces": {
+    "brujula-equipo": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/Alexis86Sevilla/brujula.git",
+        "ref": "v0.4.2"
+      }
+    }
   },
   "sandbox": {
     "enabled": true,
@@ -86,20 +101,5 @@
         "~/.config/gh"
       ]
     }
-  },
-  "worktree": {
-    "baseRef": "head"
-  },
-  "extraKnownMarketplaces": {
-    "brujula-equipo": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/Alexis86Sevilla/brujula.git",
-        "ref": "v0.4.1"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "brujula@brujula-equipo": true
   }
 }
