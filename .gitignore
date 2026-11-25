@@ -15,3 +15,4 @@ odd/
 plugin/.data/
 # Regenerated per machine by the skill registry.
 .atl/
+.claude/brujula.local.json

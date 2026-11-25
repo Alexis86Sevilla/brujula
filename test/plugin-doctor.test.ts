@@ -293,9 +293,9 @@ describe("doctor.mjs", () => {
       "In Claude, type /plugin configure brujula@brujula-equipo, fill in the Azure DevOps organization (the name in https://dev.azure.com/<organization>) and restart Claude";
 
     it("passes when the organization is set", () => {
-      expect(byName(withOrg("contoso-brains").checks, "ado-org")).toMatchObject({
+      expect(byName(withOrg("contoso").checks, "ado-org")).toMatchObject({
         ok: true,
-        detail: "Azure DevOps organization: contoso-brains",
+        detail: "Azure DevOps organization: contoso",
       });
     });
 

@@ -9,24 +9,19 @@ CLI de Azure: Azure DevOps se conecta iniciando sesión con tu cuenta de Microso
 - **Git**. En Windows, [Git for Windows](https://git-scm.com/download/win): trae Git Bash, que
   Claude Code usa para ejecutar las protecciones de Brújula.
 - **Claude Code** con tu sesión iniciada.
-- **Acceso de lectura a este repo** en Azure Repos.
 
-## 1. Comprueba el acceso al repo
+El plugin se descarga de GitHub (repositorio público, sin credenciales) y trabaja contra tu
+organización de Azure DevOps.
 
-Claude Code descarga Brújula con `git` sin poder preguntarte nada, así que git tiene que tener ya
-tu acceso guardado. En una terminal:
+## 1. Instala
 
-    git ls-remote "https://github.com/Alexis86Sevilla/brujula.git" HEAD
-
-Debe imprimir un código largo. Si se abre una ventana para iniciar sesión, entra con tu cuenta del
-trabajo y repite: Git for Windows guarda el acceso. En WSL, ver `docs/credenciales.md`.
-
-## 2. Instala
-
-    claude plugin marketplace add "https://github.com/Alexis86Sevilla/brujula.git"
+    claude plugin marketplace add Alexis86Sevilla/brujula
     claude plugin install brujula@brujula-equipo
 
-## 3. Primer arranque
+Si ya lo tenías instalado desde Azure Repos, quita antes el marketplace anterior:
+`claude plugin marketplace remove brujula-equipo`.
+
+## 2. Primer arranque
 
 Abre `claude` en cualquier carpeta. Claude Code te pide dos datos:
 
@@ -37,19 +32,19 @@ Abre `claude` en cualquier carpeta. Claude Code te pide dos datos:
 Si no te los pide, escribe `/plugin configure brujula@brujula-equipo`. La primera vez que Brújula
 use Azure DevOps se abrirá el navegador para que inicies sesión con tu cuenta de Microsoft.
 
-## 4. Comprueba que funciona
+## 3. Comprueba que funciona
 
 La primera vez, Claude te da la bienvenida él solo: comprueba la instalación, te pregunta qué haces
 en ese proyecto y te propone algo que probar. Si algo falla, escribe `/brujula:doctor`: dice qué
 falla y cómo arreglarlo.
 
-## 5. Actualizar
+## 4. Actualizar
 
 El orden importa. Cuando se publica una versión nueva:
 
 1. Solo si trabajas en este repo (fija la versión con una etiqueta): `git pull`, cierra Claude y
    ábrelo otra vez aquí. Al arrancar, Claude Code registra la etiqueta nueva; sin este paso, el
-   siguiente no encuentra nada que actualizar. Si instalaste Brújula con los comandos del paso 2,
+   siguiente no encuentra nada que actualizar. Si instalaste Brújula con los comandos del paso 1,
    sáltate este paso.
 2. En una terminal:
 

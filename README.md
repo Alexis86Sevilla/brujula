@@ -1,71 +1,83 @@
 # Brújula
 
-Asistente del equipo dentro de Claude Code para trabajar con Azure DevOps. Sirve para que el
-trabajo esté bien definido antes de empezarlo y bien revisado antes de entregarlo, sin salir de
-Claude y sin necesidad de saber comandos.
+**English** · [Español](README.es.md)
 
-Funciona en Windows (`cmd` o PowerShell) y en WSL/Linux.
+A team assistant for [Claude Code](https://claude.com/claude-code) that works with Azure DevOps.
+It helps make sure work is well defined before it starts and well reviewed before it ships,
+without leaving Claude and without having to learn commands.
 
-## Qué hace
+The plugin is downloaded from this GitHub repository and works against your own Azure DevOps
+organization. It runs on Windows (`cmd` or PowerShell), WSL and Linux.
 
-**Para quien gestiona el trabajo (PM)**
+## What it does
 
-- Convierte una idea suelta en una tarjeta clara: resultado, por qué, qué cambia y cómo se sabe
-  que está hecha. La revisa sola con un comprobador de formato.
-- Monta un backlog completo de un tema (una Feature con sus historias) y lo publica en Azure Boards.
-- Parte una historia en tareas de un día.
+**For whoever manages the work (PM)**
 
-**Para quien lidera el equipo técnico (tech lead)**
+- Turns a rough idea into a clear work item: outcome, why, what changes and how to tell it is
+  done. A format checker validates it.
+- Builds a full backlog for a topic (one Feature with its stories) and publishes it to Azure Boards.
+- Splits a story into one-day tasks.
 
-- Juzga si una tarjeta está lista para implementarse y dice qué le falta.
-- Registra las decisiones de arquitectura.
+**For the tech lead**
 
-**Para quien programa**
+- Judges whether a work item is ready to implement and says what is missing.
+- Records architecture decisions (ADRs).
 
-- Prepara cualquier repositorio sin dejar rastro en él.
-- Arranca una tarjeta: cita sus criterios, propone la rama, ejecuta los tests de partida y plantea
-  un plan con un test por criterio.
-- Prepara el commit y, si el proyecto las usa, la pull request enlazada a la tarjeta.
-- Revisa el código antes de subirlo y explica partes del código que no conoces.
+**For developers**
 
-**Lo que hace solo, en segundo plano**
+- Sets up any repository without leaving a trace in it.
+- Starts a work item: quotes its criteria, proposes the branch, runs the baseline tests and
+  plans one test per criterion.
+- Prepares the commit and, when the project uses them, the pull request linked to the work item.
+- Reviews code before it is pushed and explains unfamiliar parts of the codebase.
 
-- No deja terminar un cambio con los tests en rojo.
-- Bloquea secretos, ficheros sensibles (`.env`, lockfiles, configuración) y comandos peligrosos
-  (`rm -r`, `git push --force`, push a `main` en proyectos con pull requests).
-- **Siempre pide confirmación** antes de escribir en Azure Boards o en una pull request.
+**In the background**
 
-## Cómo funciona
+- Will not let a change finish with failing tests.
+- Blocks secrets, sensitive files (`.env`, lockfiles, configuration) and dangerous commands
+  (`rm -r`, `git push --force`, pushing to `main` in projects that use pull requests).
+- **Always asks for confirmation** before writing to Azure Boards or to a pull request.
 
-Brújula es un plugin de Claude Code con cuatro piezas:
+> Work items and messages are written in Spanish: the team that uses it works in Spanish.
 
-| Pieza          | Qué es                                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Skills         | Flujos guiados que Claude sigue: `tarjeta`, `backlog`, `publicar`, `empezar`, `pr-prep`, `bienvenida`, `doctor`…                                  |
-| Agentes        | Ayudantes especializados de solo lectura: `refinador` (juzga tarjetas), `revisor` (revisa código), `explorer` (explora el repo)                   |
-| Hooks          | Protecciones automáticas que se ejecutan antes y después de cada acción de Claude                                                                 |
-| Servidores MCP | `ado`, el servidor oficial de Microsoft para Azure DevOps, y `brujula`, con las herramientas propias (convenciones, ADR, comprobador de tarjetas) |
+## How it works
 
-La primera vez, Claude te da la bienvenida y te guía. Después le pides las cosas con tus palabras
-("crea una tarjeta para…", "créame un backlog sobre…") o con su comando (`/brujula:tarjeta`).
+Brújula is a Claude Code plugin made of four pieces:
 
-## Instalación
+| Piece       | What it is                                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Skills      | Guided flows Claude follows: `tarjeta`, `backlog`, `publicar`, `empezar`, `pr-prep`, `bienvenida`, `doctor`…                        |
+| Agents      | Read-only specialists: `refinador` (judges work items), `revisor` (reviews code), `explorer` (maps the repository)                  |
+| Hooks       | Automatic guards that run before and after each Claude action                                                                       |
+| MCP servers | `ado`, Microsoft's official Azure DevOps server, and `brujula`, with the project's own tools (conventions, ADRs, work item checker) |
 
-Requisitos: Node.js 22 o superior, Git (en Windows, Git for Windows), Claude Code con tu sesión
-iniciada y acceso de lectura a este repositorio.
+On the first session Claude welcomes you and guides you. After that, ask in your own words
+("create a card for…", "build a backlog about…") or use the command (`/brujula:tarjeta`).
 
-    claude plugin marketplace add "https://github.com/Alexis86Sevilla/brujula.git"
+## Installation
+
+Requirements: Node.js 22 or later, Git (on Windows, Git for Windows) and Claude Code with your
+session started.
+
+    claude plugin marketplace add Alexis86Sevilla/brujula
     claude plugin install brujula@brujula-equipo
 
-Al abrir `claude` te pide la organización de Azure DevOps y el método de inicio de sesión (deja el
-navegador). Los pasos completos, cómo actualizar y qué hacer si algo falla están en
-[ONBOARDING.md](ONBOARDING.md). Qué usar para cada tarea, en [docs/USO.md](docs/USO.md).
+When you open `claude`, it asks for your Azure DevOps organization (the name in
+`https://dev.azure.com/<organization>`) and the sign-in method (keep the browser). If it does not
+ask, type `/plugin configure brujula@brujula-equipo`. If something fails, run `/brujula:doctor`.
 
-## Desarrollo del plugin
+Step-by-step installation, updates and troubleshooting: [ONBOARDING.md](ONBOARDING.md) (Spanish).
+What to use for each task: [docs/USO.md](docs/USO.md) (Spanish).
 
-Node 22 y TypeScript (ESM). `npm install` y, antes de dar algo por hecho, `npm run check`
-(typecheck, lint, formato y tests); `npm run check:plugin` valida además el plugin. Las decisiones
-están en `docs/adr/` y las convenciones en `CLAUDE.md` y `.claude/rules/`.
+## Development
 
-El hook `secret-scan` bloquea los commits que añaden secretos. Para saltarlo en una sesión (decisión
-humana, tras comprobar que es un falso positivo), arranca con `BRUJULA_ALLOW_SECRETS=1 claude`.
+Node 22 and TypeScript (ESM), tested with vitest and validated with zod.
+
+    npm install
+    npm run check         # typecheck, lint, format and tests
+    npm run check:plugin  # also validates the built plugin
+
+Architecture decisions live in `docs/adr/`; conventions in `CLAUDE.md` and `.claude/rules/`.
+
+The `secret-scan` hook blocks commits that add secrets. To skip it for one session (a human
+decision, after confirming a false positive), start with `BRUJULA_ALLOW_SECRETS=1 claude`.

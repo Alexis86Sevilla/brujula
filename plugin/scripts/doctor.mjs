@@ -75,7 +75,7 @@ if (git.status !== 0 && /UtilBindVsockAnyPort|No such device or address/.test(gi
     "marketplace-git",
     git.status === 0 && /^[0-9a-f]{40}\s+HEAD/m.test(git.stdout),
     git.status === 0 ? `reachable: ${url}` : `git ls-remote failed: ${(git.stderr || "timeout").trim().split("\n")[0]}`,
-    `configure Git Credential Manager or SSH (docs/credenciales.md), then verify: ${verify}`,
+    `check your network access to the repository (proxy, firewall or credentials for a private fork), then verify: ${verify}`,
   );
 }
 
