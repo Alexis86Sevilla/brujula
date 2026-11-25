@@ -51,7 +51,8 @@ Brújula is a Claude Code plugin made of four pieces:
 | Hooks       | Automatic guards that run before and after each Claude action                                                                       |
 | MCP servers | `ado`, Microsoft's official Azure DevOps server, and `brujula`, with the project's own tools (conventions, ADRs, work item checker) |
 
-On the first session Claude welcomes you and guides you. After that, ask in your own words
+To start, open Claude and type `brujula`: it welcomes you, checks the installation and suggests
+something to try. After that, ask in your own words
 ("create a card for…", "build a backlog about…") or use the command (`/brujula:tarjeta`).
 
 ## Installation
